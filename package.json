@@ -23,7 +23,7 @@
     "tailwind-merge": "^3.7.0"
   },
   "devDependencies": {
-    "@types/node": "^20",
+    "@types/node": "^22.20.4",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
