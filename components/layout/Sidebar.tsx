@@ -24,6 +24,10 @@ export default function Sidebar() {
           <ShoppingCart size={20} />
           <span className="font-medium">Compras</span>
         </Link>
+        <Link href="/cuentas" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-secondary hover:text-foreground">
+          <FileText size={20} />
+          <span className="font-medium">Cuentas por Cobrar</span>
+        </Link>
         <Link href="/gastos" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-secondary hover:text-foreground">
           <DollarSign size={20} />
           <span className="font-medium">Gastos</span>
