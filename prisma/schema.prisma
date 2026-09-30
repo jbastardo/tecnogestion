@@ -4,7 +4,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model CategoriaCompra {
@@ -143,4 +142,67 @@ model CuentaPorCobrar {
   observaciones   String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+}
+
+model Usuario {
+  id            String    @id @default(cuid())
+  nombre        String
+  email         String    @unique
+  password      String
+  rol           Rol       @default(OPERADOR)
+  ordenesCreadas OrdenPago[] @relation("UsuarioSolicitante")
+  ordenesAprobadas OrdenPago[] @relation("UsuarioAprobador")
+  ordenesEjecutadas OrdenPago[] @relation("UsuarioEjecutor")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+enum Rol {
+  ADMINISTRATIVO
+  CONTABLE
+  OPERADOR
+}
+
+model CuentaPorPagar {
+  id            String       @id @default(cuid())
+  proveedorId   String
+  proveedor     Proveedor    @relation(fields: [proveedorId], references: [id])
+  concepto      String
+  montoTotalBs  Float        @default(0)
+  montoTotalUsd Float        @default(0)
+  fechaVencimiento DateTime?
+  estado        String       @default("PENDIENTE") // PENDIENTE, EN_PROCESO, PAGADO
+  ordenesPago   OrdenPago[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model OrdenPago {
+  id            String         @id @default(cuid())
+  cxpId         String?
+  cxp           CuentaPorPagar? @relation(fields: [cxpId], references: [id])
+  concepto      String
+  montoBs       Float          @default(0)
+  montoUsd      Float          @default(0)
+  
+  // Auditoria
+  solicitadoPorId String
+  solicitadoPor   Usuario      @relation("UsuarioSolicitante", fields: [solicitadoPorId], references: [id])
+  
+  aprobadoPorId   String?
+  aprobadoPor     Usuario?     @relation("UsuarioAprobador", fields: [aprobadoPorId], references: [id])
+  
+  ejecutadoPorId  String?
+  ejecutadoPor    Usuario?     @relation("UsuarioEjecutor", fields: [ejecutadoPorId], references: [id])
+  
+  estado        String       @default("SOLICITADA") // SOLICITADA, APROBADA, RECHAZADA, EJECUTADA
+  fechaEjecucion DateTime?
+  
+  metodoPagoId  String?
+  metodoPago    MetodoPago?  @relation(fields: [metodoPagoId], references: [id])
+  
+  comprobanteRef String?
+  
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 }
