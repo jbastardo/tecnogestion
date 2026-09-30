@@ -82,13 +82,13 @@ export default function IngresosPage() {
                 filteredIngresos.map((ingreso) => (
                   <tr key={ingreso.id} className="hover:bg-muted/50 transition-colors">
                     <td className="px-4 py-3 font-medium">{ingreso.fecha || "S/F"}</td>
-                    <td className="px-4 py-3 text-right">${ingreso.reporteZ.toFixed(2)}</td>
-                    <td className="px-4 py-3 text-right">${ingreso.notasEntrega.toFixed(2)}</td>
-                    <td className="px-4 py-3 text-right text-emerald-400">Bs. {ingreso.efectivoBs.toFixed(2)}</td>
-                    <td className="px-4 py-3 text-right text-blue-400">Bs. {ingreso.bancos.toFixed(2)}</td>
-                    <td className="px-4 py-3 text-right text-purple-400">${ingreso.zelle.toFixed(2)}</td>
-                    <td className="px-4 py-3 text-right">${ingreso.baseImponible.toFixed(2)}</td>
-                    <td className="px-4 py-3 text-right text-destructive">${ingreso.iva.toFixed(2)}</td>
+                    <td className="px-4 py-3 text-right">${(Number(ingreso.reporteZ) || 0).toFixed(2)}</td>
+                    <td className="px-4 py-3 text-right">${(Number(ingreso.notasEntrega) || 0).toFixed(2)}</td>
+                    <td className="px-4 py-3 text-right text-emerald-400">Bs. {(Number(ingreso.efectivoBs) || 0).toFixed(2)}</td>
+                    <td className="px-4 py-3 text-right text-blue-400">Bs. {(Number(ingreso.bancos) || 0).toFixed(2)}</td>
+                    <td className="px-4 py-3 text-right text-purple-400">${(Number(ingreso.zelle) || 0).toFixed(2)}</td>
+                    <td className="px-4 py-3 text-right">${(Number(ingreso.baseImponible) || 0).toFixed(2)}</td>
+                    <td className="px-4 py-3 text-right text-destructive">${(Number(ingreso.iva) || 0).toFixed(2)}</td>
                   </tr>
                 ))
               )}
