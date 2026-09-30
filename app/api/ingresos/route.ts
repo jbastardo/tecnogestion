@@ -1,46 +1,85 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import prisma from '@/lib/prisma';
 
 export async function GET() {
   try {
-    const dataPath = path.join(process.cwd(), 'extracted_data.json');
-    if (!fs.existsSync(dataPath)) {
-      return NextResponse.json({ ingresos: [] });
-    }
-    const fileContent = fs.readFileSync(dataPath, 'utf8');
-    const db = JSON.parse(fileContent);
-
-    // Format the date or fix empty fields
-    const formattedIngresos = db.ingresos.map((item: any, index: number) => {
-      let dateString = "S/F";
-      if (item["FECHA"]) {
-        if (typeof item["FECHA"] === 'number') {
-          const jsDate = new Date(Math.round((item["FECHA"] - 25569) * 86400 * 1000));
-          dateString = jsDate.toISOString().split('T')[0];
-        } else {
-          dateString = String(item["FECHA"]);
-        }
-      }
-
-      return {
-        id: index,
-        fecha: dateString,
-        reporteZ: parseFloat(item["REPORTE Z "] || 0),
-        notasEntrega: parseFloat(item["NOTAS DE ENTREGA"] || 0),
-        igtf: parseFloat(item["IGTF"] || 0),
-        efectivoBs: parseFloat(item["EFECTIVO Bs."] || 0),
-        bancos: parseFloat(item["BANCOS"] || 0),
-        zelle: parseFloat(item["ZELLE"] || 0),
-        binance: parseFloat(item["BINANCE"] || 0),
-        baseImponible: parseFloat(item["BASE IMPONIBLE"] || 0),
-        iva: parseFloat(item["IVA"] || 0),
-      };
+    const ingresos = await prisma.ingreso.findMany({
+      orderBy: { fecha: 'desc' },
+      include: { metodoPago: true }
     });
+
+    const formattedIngresos = ingresos.map((ingreso) => ({
+      id: ingreso.id,
+      fecha: ingreso.fecha.toISOString().split('T')[0],
+      reporteZ: ingreso.reporteZ,
+      notasEntrega: ingreso.notasEntrega,
+      igtf: ingreso.igtf,
+      efectivoBs: ingreso.efectivoBolivares,
+      bancos: ingreso.bancos,
+      zelle: ingreso.zelle,
+      binance: ingreso.binance,
+      baseImponible: ingreso.baseImponible,
+      iva: ingreso.iva,
+    }));
 
     return NextResponse.json({ ingresos: formattedIngresos });
   } catch (error) {
     console.error("Error reading ingresos:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const { 
+      fecha, reporteZ, notasEntrega, igtf, 
+      efectivoBs, bancos, zelle, binance, baseImponible, iva, metodoPago 
+    } = body;
+
+    let metodoPagoId = null;
+    if (metodoPago) {
+      const metodo = await prisma.metodoPago.upsert({
+        where: { nombre: String(metodoPago).trim() },
+        update: {},
+        create: { nombre: String(metodoPago).trim() }
+      });
+      metodoPagoId = metodo.id;
+    }
+
+    const nuevoIngreso = await prisma.ingreso.create({
+      data: {
+        fecha: new Date(fecha),
+        reporteZ: Number(reporteZ) || 0,
+        notasEntrega: Number(notasEntrega) || 0,
+        igtf: Number(igtf) || 0,
+        efectivoBolivares: Number(efectivoBs) || 0,
+        bancos: Number(bancos) || 0,
+        zelle: Number(zelle) || 0,
+        binance: Number(binance) || 0,
+        baseImponible: Number(baseImponible) || 0,
+        iva: Number(iva) || 0,
+        metodoPagoId,
+      }
+    });
+
+    return NextResponse.json({ success: true, ingreso: nuevoIngreso });
+  } catch (error: any) {
+    console.error("Error creating ingreso:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const { id } = await req.json();
+    if (!id) return NextResponse.json({ error: "ID requerido" }, { status: 400 });
+
+    await prisma.ingreso.delete({ where: { id: String(id) } });
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error("Error deleting ingreso:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
