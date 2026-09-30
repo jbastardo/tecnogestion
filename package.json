@@ -12,14 +12,14 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@prisma/client": "^7.10.0",
+    "@prisma/client": "^5.20.0",
     "@tailwindcss/postcss": "^4.3.3",
     "autoprefixer": "^10.6.1",
     "clsx": "^2.1.1",
     "framer-motion": "^13.4.6",
     "lucide-react": "^1.48.0",
     "next": "latest",
-    "prisma": "^7.10.0",
+    "prisma": "^5.20.0",
     "react": "latest",
     "react-dom": "latest",
     "recharts": "^3.10.1",
