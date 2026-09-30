@@ -1,17 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Search, Filter, MoreVertical, FileText } from "lucide-react";
 import { motion } from "framer-motion";
 
-const gastosIniciales = [
-  { id: 1, fecha: "2026-07-01", proveedor: "FAOV", concepto: "BANAVIH MES MAYO", tipo: "BANAVIH", total: 14.49, status: "Pagado" },
-  { id: 2, fecha: "2026-07-02", proveedor: "IVSS", concepto: "SEGURO SOCIAL MES MAYO", tipo: "IVSS", total: 7.15, status: "Pagado" },
-  { id: 3, fecha: "2026-07-02", proveedor: "ALCALDIA DE CARACAS", concepto: "RETENCIONES MUNICIPALES", tipo: "RETENCIÓN", total: 147.48, status: "Pendiente" },
-];
-
 export default function GastosPage() {
-  const [gastos, setGastos] = useState(gastosIniciales);
+  const [gastos, setGastos] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  useEffect(() => {
+    fetch('/api/gastos')
+      .then(res => res.json())
+      .then(data => {
+        setGastos(data.gastos || []);
+        setLoading(false);
+      })
+      .catch(console.error);
+  }, []);
+
+  const filteredGastos = gastos.filter(gasto => 
+    (gasto.concepto?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+    (gasto.tipoGasto?.toLowerCase() || "").includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="space-y-6 h-full flex flex-col">
@@ -37,6 +48,8 @@ export default function GastosPage() {
             <input 
               type="text" 
               placeholder="Buscar por proveedor o concepto..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className="bg-transparent w-full outline-none text-sm placeholder:text-muted-foreground"
             />
           </div>
@@ -60,17 +73,30 @@ export default function GastosPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {gastos.map((gasto) => (
-                <tr key={gasto.id} className="hover:bg-secondary/20 transition-colors group">
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-8 text-center text-muted-foreground">
+                    Cargando registros...
+                  </td>
+                </tr>
+              ) : filteredGastos.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-8 text-center text-muted-foreground">
+                    No hay registros encontrados.
+                  </td>
+                </tr>
+              ) : (
+                filteredGastos.map((gasto) => (
+                  <tr key={gasto.id} className="hover:bg-secondary/20 transition-colors group">
                   <td className="px-6 py-4 whitespace-nowrap">{gasto.fecha}</td>
-                  <td className="px-6 py-4 font-medium text-foreground">{gasto.proveedor}</td>
+                  <td className="px-6 py-4 font-medium text-foreground">{gasto.proveedor || "N/A"}</td>
                   <td className="px-6 py-4 text-muted-foreground">{gasto.concepto}</td>
                   <td className="px-6 py-4">
                     <span className="bg-secondary px-2.5 py-1 rounded-md text-xs font-medium">
-                      {gasto.tipo}
+                      {gasto.tipoGasto}
                     </span>
                   </td>
-                  <td className="px-6 py-4 font-semibold text-right">${gasto.total.toFixed(2)}</td>
+                  <td className="px-6 py-4 font-semibold text-right">${(gasto.totalPagar || 0).toFixed(2)}</td>
                   <td className="px-6 py-4 text-center">
                     <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${
                       gasto.status === 'Pagado' 
@@ -86,7 +112,8 @@ export default function GastosPage() {
                     </button>
                   </td>
                 </tr>
-              ))}
+                ))
+              )}
             </tbody>
           </table>
         </div>

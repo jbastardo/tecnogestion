@@ -16,9 +16,9 @@ export default function Sidebar() {
           <LayoutDashboard size={20} />
           <span className="font-medium">Resumen</span>
         </Link>
-        <Link href="/facturacion" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-secondary hover:text-foreground">
+        <Link href="/ingresos" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-secondary hover:text-foreground">
           <FileText size={20} />
-          <span className="font-medium">Facturación</span>
+          <span className="font-medium">Ingresos</span>
         </Link>
         <Link href="/compras" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-secondary hover:text-foreground">
           <ShoppingCart size={20} />
