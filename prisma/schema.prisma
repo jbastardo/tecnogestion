@@ -117,6 +117,7 @@ model Ingreso {
   zelle               Float       @default(0)
   binance             Float       @default(0)
   banescoPanama       Float       @default(0)
+  bancos              Float       @default(0)
   ventasSinIva        Float       @default(0)
   ventasConIva        Float       @default(0)
   ventasEnNe          Float       @default(0)

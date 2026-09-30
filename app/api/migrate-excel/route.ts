@@ -17,8 +17,8 @@ export async function GET() {
 
     // 1. Seed Métodos de Pago
     const metodosRaw = [...new Set([
-      ...db.gastos.map((g: any) => g["T / P"] || "N/A"),
-      ...db.compras.map((c: any) => c["T/P"] || "N/A"),
+      ...db.gastos.slice(1).map((g: any) => g[" T / P "] || "N/A"),
+      ...db.compras.slice(2).map((c: any) => c["__EMPTY_15"] || "N/A"),
       ...db.cuentasPorCobrar.map((c: any) => c["T / P"] || "N/A")
     ])];
     
@@ -31,7 +31,7 @@ export async function GET() {
     }));
 
     // 2. Seed Categorías de Gasto
-    const categoriasGastoRaw = [...new Set(db.gastos.map((g: any) => g["TIPO DE GASTOS"] || "General"))];
+    const categoriasGastoRaw = [...new Set(db.gastos.slice(1).map((g: any) => g["TIPO DE GASTOS"] || "General"))];
     const categoriasGasto = await Promise.all(categoriasGastoRaw.map(async (c: any) => {
       return prisma.categoriaGasto.upsert({
         where: { nombre: String(c).trim() },
@@ -42,8 +42,8 @@ export async function GET() {
 
     // 3. Seed Proveedores
     const proveedoresRaw = [...new Set([
-      ...db.gastos.map((g: any) => g["PROVEEDOR"] || "Desconocido"),
-      ...db.compras.map((c: any) => c["PROVEEDOR"] || "Desconocido")
+      ...db.gastos.slice(1).map((g: any) => g["PROVEEDOR"] || "Desconocido"),
+      ...db.compras.slice(2).map((c: any) => c["__EMPTY_2"] || "Desconocido")
     ])];
     const proveedores = await Promise.all(proveedoresRaw.map(async (p: any) => {
       return prisma.proveedor.upsert({
@@ -57,6 +57,7 @@ export async function GET() {
     if (db.cuentasPorCobrar && db.cuentasPorCobrar.length > 0) {
       await prisma.cuentaPorCobrar.deleteMany({});
       for (const cuenta of db.cuentasPorCobrar) {
+        if (!cuenta["CLIENTE/DESCRIPCION"]) continue;
         await prisma.cuentaPorCobrar.create({
           data: {
             cliente: cuenta["CLIENTE/DESCRIPCION"] || "Sin nombre",
@@ -68,24 +69,19 @@ export async function GET() {
         });
       }
     }
+
     // 5. Seed Gastos
-    if (db.gastos && db.gastos.length > 0) {
+    if (db.gastos && db.gastos.length > 1) {
       await prisma.gasto.deleteMany({});
-      for (const gasto of db.gastos) {
-        // Encontrar IDs foráneos
+      const dataRows = db.gastos.filter((g: any) => g["IT"] && typeof g["IT"] === 'number');
+      for (const gasto of dataRows) {
         const prov = proveedores.find((p: any) => p.nombre === String(gasto["PROVEEDOR"] || "Desconocido").trim());
         const cat = categoriasGasto.find((c: any) => c.nombre === String(gasto["TIPO DE GASTOS"] || "General").trim());
-        const met = metodos.find((m: any) => m.nombre === String(gasto["T / P"] || "N/A").trim());
+        const met = metodos.find((m: any) => m.nombre === String(gasto[" T / P "] || "N/A").trim());
         
         let parsedDate = new Date();
-        if (gasto["FECHA"]) {
-            // Excel dates are usually numbers (serial dates)
-            if (typeof gasto["FECHA"] === 'number') {
-                parsedDate = new Date(Math.round((gasto["FECHA"] - 25569) * 86400 * 1000));
-            } else {
-                parsedDate = new Date(gasto["FECHA"])
-                if (isNaN(parsedDate.getTime())) parsedDate = new Date();
-            }
+        if (gasto["FECHA"] && typeof gasto["FECHA"] === 'number') {
+            parsedDate = new Date(Math.round((gasto["FECHA"] - 25569) * 86400 * 1000));
         }
 
         await prisma.gasto.create({
@@ -95,11 +91,8 @@ export async function GET() {
             categoriaId: cat?.id || categoriasGasto[0].id,
             metodoPagoId: met?.id || metodos[0].id,
             concepto: String(gasto["CONCEPTO"] || "Sin concepto"),
-            notaEntrega: String(gasto["NOTA DE ENTREGA"] || gasto["Nº NOTA DE E."] || ""),
-            exento: parseFloat(gasto["EXENTO"] || 0),
-            baseImponible: parseFloat(gasto["BASE IMPONIBLE"] || 0),
             iva: parseFloat(gasto["IVA"] || 0),
-            totalAPagar: parseFloat(gasto["A PAGAR"] || gasto["TOTAL A PAGAR"] || 0),
+            totalAPagar: parseFloat(gasto["A PAGAR"] || 0),
             estadoPago: "Pagado"
           }
         });
@@ -107,7 +100,7 @@ export async function GET() {
     }
 
     // 6. Seed Compras
-    const categoriasCompraRaw = [...new Set(db.compras.map((c: any) => c["TIPO DE COMPRA"] || "General"))];
+    const categoriasCompraRaw = [...new Set(db.compras.slice(2).map((c: any) => c["__EMPTY_3"] || "General"))];
     const categoriasCompra = await Promise.all(categoriasCompraRaw.map(async (c: any) => {
       return prisma.categoriaCompra.upsert({
         where: { nombre: String(c).trim() },
@@ -116,21 +109,17 @@ export async function GET() {
       });
     }));
 
-    if (db.compras && db.compras.length > 0) {
+    if (db.compras && db.compras.length > 2) {
       await prisma.compra.deleteMany({});
-      for (const compra of db.compras) {
-        const prov = proveedores.find((p: any) => p.nombre === String(compra["PROVEEDOR"] || "Desconocido").trim());
-        const cat = categoriasCompra.find((c: any) => c.nombre === String(compra["TIPO DE COMPRA"] || "General").trim());
-        const met = metodos.find((m: any) => m.nombre === String(compra["T/P"] || compra["T / P"] || "N/A").trim());
+      const dataRows = db.compras.slice(2).filter((c: any) => c["__EMPTY_2"]);
+      for (const compra of dataRows) {
+        const prov = proveedores.find((p: any) => p.nombre === String(compra["__EMPTY_2"] || "Desconocido").trim());
+        const cat = categoriasCompra.find((c: any) => c.nombre === String(compra["__EMPTY_3"] || "General").trim());
+        const met = metodos.find((m: any) => m.nombre === String(compra["__EMPTY_15"] || "N/A").trim());
         
         let parsedDate = new Date();
-        if (compra["FECHA  FACTURA"]) {
-            if (typeof compra["FECHA  FACTURA"] === 'number') {
-                parsedDate = new Date(Math.round((compra["FECHA  FACTURA"] - 25569) * 86400 * 1000));
-            } else {
-                parsedDate = new Date(compra["FECHA  FACTURA"])
-                if (isNaN(parsedDate.getTime())) parsedDate = new Date();
-            }
+        if (compra["__EMPTY_1"] && typeof compra["__EMPTY_1"] === 'number') {
+            parsedDate = new Date(Math.round((compra["__EMPTY_1"] - 25569) * 86400 * 1000));
         }
 
         await prisma.compra.create({
@@ -139,13 +128,37 @@ export async function GET() {
             proveedorId: prov?.id || proveedores[0].id,
             categoriaId: cat?.id || categoriasCompra[0].id,
             metodoPagoId: met?.id || metodos[0].id,
-            notaEntrega: String(compra["NOTA DE ENTREGA"] || ""),
-            exento: parseFloat(compra["EXENTO"] || 0),
-            baseImponible: parseFloat(compra["BASE IMPONIBLE"] || 0),
-            iva: parseFloat(compra["IVA"] || 0),
-            totalAPagar: parseFloat(compra["A PAGAR"] || 0),
+            notaEntrega: String(compra["__EMPTY_4"] || compra["__EMPTY_5"] || ""),
+            exento: parseFloat(compra["__EMPTY_6"] || 0),
+            baseImponible: parseFloat(compra["__EMPTY_7"] || 0),
+            iva: parseFloat(compra["__EMPTY_8"] || 0),
+            totalAPagar: parseFloat(compra["__EMPTY_11"] || 0),
             estadoPago: "Pagado",
-            observaciones: String(compra["OBSERVACIONES"] || "")
+            observaciones: String(compra["__EMPTY_18"] || "")
+          }
+        });
+      }
+    }
+
+    // 7. Seed Ingresos
+    if (db.ingresos && db.ingresos.length > 1) {
+      await prisma.ingreso.deleteMany({});
+      const dataRows = db.ingresos.slice(1).filter((i: any) => i["__EMPTY"] && typeof i["__EMPTY"] === 'number');
+      for (const ingreso of dataRows) {
+        let parsedDate = new Date(Math.round((ingreso["__EMPTY"] - 25569) * 86400 * 1000));
+        
+        await prisma.ingreso.create({
+          data: {
+            fecha: parsedDate,
+            reporteZ: parseFloat(ingreso["REPORTE Z"] || 0),
+            notasEntrega: parseFloat(ingreso["NOTAS DE ENTREGA"] || 0),
+            igtf: parseFloat(ingreso["IGTF"] || 0),
+            efectivoBolivares: parseFloat(ingreso["EFECTIVO  BOLIVARES"] || 0),
+            bancos: parseFloat(ingreso["BANCOS"] || 0),
+            monedaExtranjera: parseFloat(ingreso["MONEDA EXTRANJERA"] || 0),
+            zelle: parseFloat(ingreso["__EMPTY_2"] || 0),
+            binance: parseFloat(ingreso["__EMPTY_3"] || 0),
+            tasaCambio: parseFloat(ingreso["TASA DE CAMBIO"] || 1),
           }
         });
       }
@@ -153,11 +166,12 @@ export async function GET() {
 
     return NextResponse.json({ 
       success: true, 
-      message: "Base de datos migrada exitosamente desde el Excel.",
+      message: "Base de datos migrada exitosamente desde el Excel con mapeo exacto de llaves.",
       stats: {
         proveedores: proveedores.length,
         metodos: metodos.length,
-        categorias: categoriasGasto.length
+        categoriasGastos: categoriasGasto.length,
+        categoriasCompras: categoriasCompra.length
       }
     });
 
