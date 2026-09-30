@@ -68,6 +68,39 @@ export async function GET() {
         });
       }
     }
+    // 5. Seed Gastos
+    if (db.gastos && db.gastos.length > 0) {
+      await prisma.gasto.deleteMany({});
+      for (const gasto of db.gastos) {
+        // Encontrar IDs foráneos
+        const prov = proveedores.find(p => p.nombre === String(gasto["PROVEEDOR"] || "Desconocido").trim());
+        const cat = categoriasGasto.find(c => c.nombre === String(gasto["TIPO DE GASTO "] || "General").trim());
+        const met = metodos.find(m => m.nombre === String(gasto["T / P"] || "N/A").trim());
+        
+        let parsedDate = new Date();
+        if (gasto["FECHA"]) {
+            // Excel dates or string dates handling can be tricky, fallback to now
+            parsedDate = new Date(gasto["FECHA"])
+            if (isNaN(parsedDate.getTime())) parsedDate = new Date();
+        }
+
+        await prisma.gasto.create({
+          data: {
+            fecha: parsedDate,
+            proveedorId: prov?.id || proveedores[0].id,
+            categoriaId: cat?.id || categoriasGasto[0].id,
+            metodoPagoId: met?.id || metodos[0].id,
+            concepto: gasto["CONCEPTO"] || "Sin concepto",
+            notaEntrega: gasto["Nº NOTA DE E."] || "",
+            exento: parseFloat(gasto["EXENTO"] || 0),
+            baseImponible: parseFloat(gasto["BASE IMPONIBLE"] || 0),
+            iva: parseFloat(gasto["IVA"] || 0),
+            totalAPagar: parseFloat(gasto["TOTAL A PAGAR"] || 0),
+            estadoPago: "Pagado"
+          }
+        });
+      }
+    }
 
     return NextResponse.json({ 
       success: true, 

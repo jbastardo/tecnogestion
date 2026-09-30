@@ -1,34 +1,62 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 export async function GET() {
   try {
-    const dataPath = path.join(process.cwd(), 'extracted_data.json');
-    if (!fs.existsSync(dataPath)) {
-      return NextResponse.json({ gastos: [] });
-    }
-    const fileContent = fs.readFileSync(dataPath, 'utf8');
-    const db = JSON.parse(fileContent);
+    const gastosData = await prisma.gasto.findMany({
+      include: {
+        proveedor: true,
+        categoria: true,
+        metodoPago: true,
+      },
+      orderBy: {
+        fecha: 'desc'
+      }
+    });
 
-    // Format the date or fix empty fields
-    const formattedGastos = db.gastos.map((item: any, index: number) => ({
-      id: index,
-      fecha: item["FECHA"] || "",
-      concepto: item["CONCEPTO"] || "Sin concepto",
-      tipoGasto: item["TIPO DE GASTO "] || "N/A",
-      notaEntrega: item["Nº NOTA DE E."] || "",
-      exento: parseFloat(item["EXENTO"] || 0),
-      baseImponible: parseFloat(item["BASE IMPONIBLE"] || 0),
-      iva: parseFloat(item["IVA"] || 0),
-      totalPagar: parseFloat(item["TOTAL A PAGAR"] || 0),
-      metodoPago: item["T / P"] || "N/A",
-      status: "Pagado",
+    const formattedGastos = gastosData.map(gasto => ({
+      id: gasto.id,
+      fecha: gasto.fecha.toISOString().split('T')[0],
+      concepto: gasto.concepto,
+      tipoGasto: gasto.categoria?.nombre || "N/A",
+      notaEntrega: gasto.notaEntrega || "",
+      exento: gasto.exento,
+      baseImponible: gasto.baseImponible,
+      iva: gasto.iva,
+      totalPagar: gasto.totalAPagar,
+      metodoPago: gasto.metodoPago?.nombre || "N/A",
+      status: gasto.estadoPago,
+      proveedor: gasto.proveedor?.nombre || "N/A"
     }));
 
     return NextResponse.json({ gastos: formattedGastos });
-  } catch (error) {
-    console.error("Error reading gastos:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  } catch (error: any) {
+    console.error("Error fetching gastos from DB:", error);
+    return NextResponse.json({ error: "Internal Server Error", details: error.message }, { status: 500 });
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    
+    // Simplistic creation for now (you'd ideally validate this)
+    const nuevoGasto = await prisma.gasto.create({
+      data: {
+        fecha: new Date(body.fecha),
+        concepto: body.concepto,
+        proveedorId: body.proveedorId,
+        categoriaId: body.categoriaId,
+        totalAPagar: body.totalPagar,
+        estadoPago: body.status || "POR PAGAR"
+      }
+    });
+
+    return NextResponse.json({ success: true, gasto: nuevoGasto });
+  } catch (error: any) {
+    console.error("Error creating gasto:", error);
+    return NextResponse.json({ error: "Internal Server Error", details: error.message }, { status: 500 });
   }
 }
