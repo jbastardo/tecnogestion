@@ -106,6 +106,51 @@ export async function GET() {
       }
     }
 
+    // 6. Seed Compras
+    const categoriasCompraRaw = [...new Set(db.compras.map((c: any) => c["TIPO DE COMPRA"] || "General"))];
+    const categoriasCompra = await Promise.all(categoriasCompraRaw.map(async (c: any) => {
+      return prisma.categoriaCompra.upsert({
+        where: { nombre: String(c).trim() },
+        update: {},
+        create: { nombre: String(c).trim() }
+      });
+    }));
+
+    if (db.compras && db.compras.length > 0) {
+      await prisma.compra.deleteMany({});
+      for (const compra of db.compras) {
+        const prov = proveedores.find(p => p.nombre === String(compra["PROVEEDOR"] || "Desconocido").trim());
+        const cat = categoriasCompra.find(c => c.nombre === String(compra["TIPO DE COMPRA"] || "General").trim());
+        const met = metodos.find(m => m.nombre === String(compra["T/P"] || compra["T / P"] || "N/A").trim());
+        
+        let parsedDate = new Date();
+        if (compra["FECHA  FACTURA"]) {
+            if (typeof compra["FECHA  FACTURA"] === 'number') {
+                parsedDate = new Date(Math.round((compra["FECHA  FACTURA"] - 25569) * 86400 * 1000));
+            } else {
+                parsedDate = new Date(compra["FECHA  FACTURA"])
+                if (isNaN(parsedDate.getTime())) parsedDate = new Date();
+            }
+        }
+
+        await prisma.compra.create({
+          data: {
+            fechaFactura: parsedDate,
+            proveedorId: prov?.id || proveedores[0].id,
+            categoriaId: cat?.id || categoriasCompra[0].id,
+            metodoPagoId: met?.id || metodos[0].id,
+            notaEntrega: compra["NOTA DE ENTREGA"] || "",
+            exento: parseFloat(compra["EXENTO"] || 0),
+            baseImponible: parseFloat(compra["BASE IMPONIBLE"] || 0),
+            iva: parseFloat(compra["IVA"] || 0),
+            totalAPagar: parseFloat(compra["A PAGAR"] || 0),
+            estadoPago: "Pagado",
+            observaciones: compra["OBSERVACIONES"] || ""
+          }
+        });
+      }
+    }
+
     return NextResponse.json({ 
       success: true, 
       message: "Base de datos migrada exitosamente desde el Excel.",
