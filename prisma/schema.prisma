@@ -1,0 +1,145 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model CategoriaCompra {
+  id        String   @id @default(cuid())
+  nombre    String   @unique
+  compras   Compra[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CategoriaGasto {
+  id        String   @id @default(cuid())
+  nombre    String   @unique
+  gastos    Gasto[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model MetodoPago {
+  id        String    @id @default(cuid())
+  nombre    String    @unique
+  compras   Compra[]
+  gastos    Gasto[]
+  ingresos  Ingreso[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Proveedor {
+  id        String   @id @default(cuid())
+  nombre    String   @unique
+  rif       String?
+  compras   Compra[]
+  gastos    Gasto[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Compra {
+  id                String          @id @default(cuid())
+  it                Int?
+  fechaFactura      DateTime
+  proveedorId       String
+  proveedor         Proveedor       @relation(fields: [proveedorId], references: [id])
+  categoriaId       String
+  categoria         CategoriaCompra @relation(fields: [categoriaId], references: [id])
+  notaEntrega       String?
+  numeroFactura     String?
+  numeroControl     String?
+  exento            Float           @default(0)
+  baseImponible     Float           @default(0)
+  iva               Float           @default(0)
+  porcentajeRetIva  Float           @default(0)
+  retencionIva      Float           @default(0)
+  totalAPagar       Float           @default(0)
+  tasaCambio        Float           @default(1)
+  totalUsd          Float           @default(0)
+  pagadoBs          Float           @default(0)
+  metodoPagoId      String?
+  metodoPago        MetodoPago?     @relation(fields: [metodoPagoId], references: [id])
+  delMes            Boolean         @default(true)
+  fechaPago         DateTime?
+  estadoPago        String          @default("POR PAGAR") // PAGADO o POR PAGAR
+  observaciones     String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+}
+
+model Gasto {
+  id                String         @id @default(cuid())
+  it                Int?
+  fecha             DateTime
+  proveedorId       String
+  proveedor         Proveedor      @relation(fields: [proveedorId], references: [id])
+  concepto          String
+  categoriaId       String
+  categoria         CategoriaGasto @relation(fields: [categoriaId], references: [id])
+  notaEntrega       String?
+  numeroFactura     String?
+  numeroControl     String?
+  exento            Float          @default(0)
+  baseImponible     Float          @default(0)
+  iva               Float          @default(0)
+  porcentajeRetIva  Float          @default(0)
+  retencionIva      Float          @default(0)
+  totalAPagar       Float          @default(0)
+  tasaCambio        Float          @default(1)
+  totalUsd          Float          @default(0)
+  pagadoBs          Float          @default(0)
+  metodoPagoId      String?
+  metodoPago        MetodoPago?    @relation(fields: [metodoPagoId], references: [id])
+  delMes            Boolean        @default(true)
+  fechaPago         DateTime?
+  estadoPago        String         @default("POR PAGAR")
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+}
+
+model Ingreso {
+  id                  String      @id @default(cuid())
+  fecha               DateTime
+  reporteZ            Float       @default(0)
+  notasEntrega        Float       @default(0)
+  igtf                Float       @default(0)
+  efectivoBolivares   Float       @default(0)
+  metodoPagoId        String?
+  metodoPago          MetodoPago? @relation(fields: [metodoPagoId], references: [id])
+  monedaExtranjera    Float       @default(0)
+  tasaCambio          Float       @default(1)
+  zelle               Float       @default(0)
+  binance             Float       @default(0)
+  banescoPanama       Float       @default(0)
+  ventasSinIva        Float       @default(0)
+  ventasConIva        Float       @default(0)
+  ventasEnNe          Float       @default(0)
+  baseImponible       Float       @default(0)
+  iva                 Float       @default(0)
+  ventasDiariasUsd    Float       @default(0)
+  difVentasIngresos   Float       @default(0)
+  ingresosUsd         Float       @default(0)
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+}
+
+model CuentaPorCobrar {
+  id              String   @id @default(cuid())
+  cliente         String
+  referencia      String?
+  montoBase       Float    @default(0)
+  montoIva        Float    @default(0)
+  montoTotal      Float    @default(0)
+  importeAdeudado Float    @default(0)
+  tasaCambio      Float    @default(1)
+  totalUsd        Float    @default(0)
+  observaciones   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
