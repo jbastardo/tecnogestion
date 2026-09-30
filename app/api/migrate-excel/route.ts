@@ -94,8 +94,8 @@ export async function GET() {
             proveedorId: prov?.id || proveedores[0].id,
             categoriaId: cat?.id || categoriasGasto[0].id,
             metodoPagoId: met?.id || metodos[0].id,
-            concepto: gasto["CONCEPTO"] || "Sin concepto",
-            notaEntrega: gasto["NOTA DE ENTREGA"] || gasto["Nº NOTA DE E."] || "",
+            concepto: String(gasto["CONCEPTO"] || "Sin concepto"),
+            notaEntrega: String(gasto["NOTA DE ENTREGA"] || gasto["Nº NOTA DE E."] || ""),
             exento: parseFloat(gasto["EXENTO"] || 0),
             baseImponible: parseFloat(gasto["BASE IMPONIBLE"] || 0),
             iva: parseFloat(gasto["IVA"] || 0),
@@ -139,13 +139,13 @@ export async function GET() {
             proveedorId: prov?.id || proveedores[0].id,
             categoriaId: cat?.id || categoriasCompra[0].id,
             metodoPagoId: met?.id || metodos[0].id,
-            notaEntrega: compra["NOTA DE ENTREGA"] || "",
+            notaEntrega: String(compra["NOTA DE ENTREGA"] || ""),
             exento: parseFloat(compra["EXENTO"] || 0),
             baseImponible: parseFloat(compra["BASE IMPONIBLE"] || 0),
             iva: parseFloat(compra["IVA"] || 0),
             totalAPagar: parseFloat(compra["A PAGAR"] || 0),
             estadoPago: "Pagado",
-            observaciones: compra["OBSERVACIONES"] || ""
+            observaciones: String(compra["OBSERVACIONES"] || "")
           }
         });
       }
