@@ -31,7 +31,7 @@ export async function GET() {
     }));
 
     // 2. Seed Categorías de Gasto
-    const categoriasGastoRaw = [...new Set(db.gastos.map((g: any) => g["TIPO DE GASTO "] || "General"))];
+    const categoriasGastoRaw = [...new Set(db.gastos.map((g: any) => g["TIPO DE GASTOS"] || "General"))];
     const categoriasGasto = await Promise.all(categoriasGastoRaw.map(async (c: any) => {
       return prisma.categoriaGasto.upsert({
         where: { nombre: String(c).trim() },
@@ -74,14 +74,18 @@ export async function GET() {
       for (const gasto of db.gastos) {
         // Encontrar IDs foráneos
         const prov = proveedores.find(p => p.nombre === String(gasto["PROVEEDOR"] || "Desconocido").trim());
-        const cat = categoriasGasto.find(c => c.nombre === String(gasto["TIPO DE GASTO "] || "General").trim());
+        const cat = categoriasGasto.find(c => c.nombre === String(gasto["TIPO DE GASTOS"] || "General").trim());
         const met = metodos.find(m => m.nombre === String(gasto["T / P"] || "N/A").trim());
         
         let parsedDate = new Date();
         if (gasto["FECHA"]) {
-            // Excel dates or string dates handling can be tricky, fallback to now
-            parsedDate = new Date(gasto["FECHA"])
-            if (isNaN(parsedDate.getTime())) parsedDate = new Date();
+            // Excel dates are usually numbers (serial dates)
+            if (typeof gasto["FECHA"] === 'number') {
+                parsedDate = new Date(Math.round((gasto["FECHA"] - 25569) * 86400 * 1000));
+            } else {
+                parsedDate = new Date(gasto["FECHA"])
+                if (isNaN(parsedDate.getTime())) parsedDate = new Date();
+            }
         }
 
         await prisma.gasto.create({
@@ -91,11 +95,11 @@ export async function GET() {
             categoriaId: cat?.id || categoriasGasto[0].id,
             metodoPagoId: met?.id || metodos[0].id,
             concepto: gasto["CONCEPTO"] || "Sin concepto",
-            notaEntrega: gasto["Nº NOTA DE E."] || "",
+            notaEntrega: gasto["NOTA DE ENTREGA"] || gasto["Nº NOTA DE E."] || "",
             exento: parseFloat(gasto["EXENTO"] || 0),
             baseImponible: parseFloat(gasto["BASE IMPONIBLE"] || 0),
             iva: parseFloat(gasto["IVA"] || 0),
-            totalAPagar: parseFloat(gasto["TOTAL A PAGAR"] || 0),
+            totalAPagar: parseFloat(gasto["A PAGAR"] || gasto["TOTAL A PAGAR"] || 0),
             estadoPago: "Pagado"
           }
         });

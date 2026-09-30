@@ -38,17 +38,17 @@ function readExcelFiles() {
       }
 
       // Leer COMPRAS
-      const sheetCompras = workbook.Sheets["COMPRAS FACT "];
+      const sheetCompras = workbook.Sheets["COMPRAS FACT"];
       if (sheetCompras) {
-        const comprasJson = xlsx.utils.sheet_to_json(sheetCompras, { range: 5 }); 
+        const comprasJson = xlsx.utils.sheet_to_json(sheetCompras, { range: 2 }); 
         dbData.compras = comprasJson;
         console.log(`    -> COMPRAS: ${comprasJson.length} registros extraidos.`);
       }
 
       // Leer GASTOS
-      const sheetGastos = workbook.Sheets["GASTOS"];
+      const sheetGastos = workbook.Sheets["GASTOS "];
       if (sheetGastos) {
-        const gastosJson = xlsx.utils.sheet_to_json(sheetGastos, { range: 3 }); 
+        const gastosJson = xlsx.utils.sheet_to_json(sheetGastos, { range: 2 }); 
         dbData.gastos = gastosJson;
         console.log(`    -> GASTOS: ${gastosJson.length} registros extraidos.`);
       }
