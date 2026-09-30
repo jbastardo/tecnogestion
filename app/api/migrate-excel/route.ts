@@ -73,9 +73,9 @@ export async function GET() {
       await prisma.gasto.deleteMany({});
       for (const gasto of db.gastos) {
         // Encontrar IDs foráneos
-        const prov = proveedores.find(p => p.nombre === String(gasto["PROVEEDOR"] || "Desconocido").trim());
-        const cat = categoriasGasto.find(c => c.nombre === String(gasto["TIPO DE GASTOS"] || "General").trim());
-        const met = metodos.find(m => m.nombre === String(gasto["T / P"] || "N/A").trim());
+        const prov = proveedores.find((p: any) => p.nombre === String(gasto["PROVEEDOR"] || "Desconocido").trim());
+        const cat = categoriasGasto.find((c: any) => c.nombre === String(gasto["TIPO DE GASTOS"] || "General").trim());
+        const met = metodos.find((m: any) => m.nombre === String(gasto["T / P"] || "N/A").trim());
         
         let parsedDate = new Date();
         if (gasto["FECHA"]) {
@@ -119,9 +119,9 @@ export async function GET() {
     if (db.compras && db.compras.length > 0) {
       await prisma.compra.deleteMany({});
       for (const compra of db.compras) {
-        const prov = proveedores.find(p => p.nombre === String(compra["PROVEEDOR"] || "Desconocido").trim());
-        const cat = categoriasCompra.find(c => c.nombre === String(compra["TIPO DE COMPRA"] || "General").trim());
-        const met = metodos.find(m => m.nombre === String(compra["T/P"] || compra["T / P"] || "N/A").trim());
+        const prov = proveedores.find((p: any) => p.nombre === String(compra["PROVEEDOR"] || "Desconocido").trim());
+        const cat = categoriasCompra.find((c: any) => c.nombre === String(compra["TIPO DE COMPRA"] || "General").trim());
+        const met = metodos.find((m: any) => m.nombre === String(compra["T/P"] || compra["T / P"] || "N/A").trim());
         
         let parsedDate = new Date();
         if (compra["FECHA  FACTURA"]) {

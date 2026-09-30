@@ -16,7 +16,7 @@ export async function GET() {
       }
     });
 
-    const formattedGastos = gastosData.map(gasto => ({
+    const formattedGastos = gastosData.map((gasto: any) => ({
       id: gasto.id,
       fecha: gasto.fecha.toISOString().split('T')[0],
       concepto: gasto.concepto,
