@@ -1,15 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Search, Filter, MoreVertical, FileText } from "lucide-react";
+import { Plus, Search, Filter, MoreVertical, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { NuevoGastoModal } from "./NuevoGastoModal";
 
 export default function GastosPage() {
   const [gastos, setGastos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  useEffect(() => {
+  const fetchGastos = () => {
+    setLoading(true);
     fetch('/api/gastos')
       .then(res => res.json())
       .then(data => {
@@ -17,7 +20,29 @@ export default function GastosPage() {
         setLoading(false);
       })
       .catch(console.error);
+  };
+
+  useEffect(() => {
+    fetchGastos();
   }, []);
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("¿Seguro que deseas eliminar este gasto?")) return;
+    try {
+      const res = await fetch('/api/gastos', {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id })
+      });
+      if (res.ok) {
+        fetchGastos();
+      } else {
+        alert("Error eliminando gasto");
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   const filteredGastos = gastos.filter(gasto => 
     (gasto.concepto?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
@@ -26,12 +51,21 @@ export default function GastosPage() {
 
   return (
     <div className="space-y-6 h-full flex flex-col">
+      <NuevoGastoModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onSave={() => fetchGastos()} 
+      />
+
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Control de Gastos</h2>
           <p className="text-muted-foreground">Administración y registro de gastos operativos.</p>
         </div>
-        <button className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm">
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm"
+        >
           <Plus size={18} />
           Nuevo Gasto
         </button>
@@ -107,8 +141,12 @@ export default function GastosPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button className="text-muted-foreground hover:text-primary transition-colors opacity-0 group-hover:opacity-100">
-                      <MoreVertical size={18} />
+                    <button 
+                      onClick={() => handleDelete(gasto.id)}
+                      title="Eliminar Gasto"
+                      className="text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
+                    >
+                      <Trash2 size={18} />
                     </button>
                   </td>
                 </tr>

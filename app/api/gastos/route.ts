@@ -42,14 +42,39 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     
-    // Simplistic creation for now (you'd ideally validate this)
+    // Upsert Proveedor
+    const proveedor = await prisma.proveedor.upsert({
+      where: { nombre: body.proveedor.trim() },
+      update: {},
+      create: { nombre: body.proveedor.trim() }
+    });
+
+    // Upsert Categoria
+    const categoria = await prisma.categoriaGasto.upsert({
+      where: { nombre: body.tipoGasto.trim() },
+      update: {},
+      create: { nombre: body.tipoGasto.trim() }
+    });
+
+    // Upsert MetodoPago
+    const metodoPago = await prisma.metodoPago.upsert({
+      where: { nombre: (body.metodoPago || "N/A").trim() },
+      update: {},
+      create: { nombre: (body.metodoPago || "N/A").trim() }
+    });
+
     const nuevoGasto = await prisma.gasto.create({
       data: {
         fecha: new Date(body.fecha),
         concepto: body.concepto,
-        proveedorId: body.proveedorId,
-        categoriaId: body.categoriaId,
-        totalAPagar: body.totalPagar,
+        proveedorId: proveedor.id,
+        categoriaId: categoria.id,
+        metodoPagoId: metodoPago.id,
+        notaEntrega: body.notaEntrega || "",
+        exento: parseFloat(body.exento || 0),
+        baseImponible: parseFloat(body.baseImponible || 0),
+        iva: parseFloat(body.iva || 0),
+        totalAPagar: parseFloat(body.totalPagar || 0),
         estadoPago: body.status || "POR PAGAR"
       }
     });
@@ -57,6 +82,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, gasto: nuevoGasto });
   } catch (error: any) {
     console.error("Error creating gasto:", error);
+    return NextResponse.json({ error: "Internal Server Error", details: error.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const { id } = await req.json();
+    await prisma.gasto.delete({ where: { id } });
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error("Error deleting gasto:", error);
     return NextResponse.json({ error: "Internal Server Error", details: error.message }, { status: 500 });
   }
 }
