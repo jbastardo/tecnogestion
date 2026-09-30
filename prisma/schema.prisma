@@ -24,110 +24,112 @@ model CategoriaGasto {
 }
 
 model MetodoPago {
-  id        String    @id @default(cuid())
-  nombre    String    @unique
-  compras   Compra[]
-  gastos    Gasto[]
-  ingresos  Ingreso[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id          String      @id @default(cuid())
+  nombre      String      @unique
+  compras     Compra[]
+  gastos      Gasto[]
+  ingresos    Ingreso[]
+  ordenesPago OrdenPago[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 }
 
 model Proveedor {
-  id        String   @id @default(cuid())
-  nombre    String   @unique
-  rif       String?
-  compras   Compra[]
-  gastos    Gasto[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String           @id @default(cuid())
+  nombre          String           @unique
+  rif             String?
+  compras         Compra[]
+  gastos          Gasto[]
+  cuentasPorPagar CuentaPorPagar[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 }
 
 model Compra {
-  id                String          @id @default(cuid())
-  it                Int?
-  fechaFactura      DateTime
-  proveedorId       String
-  proveedor         Proveedor       @relation(fields: [proveedorId], references: [id])
-  categoriaId       String
-  categoria         CategoriaCompra @relation(fields: [categoriaId], references: [id])
-  notaEntrega       String?
-  numeroFactura     String?
-  numeroControl     String?
-  exento            Float           @default(0)
-  baseImponible     Float           @default(0)
-  iva               Float           @default(0)
-  porcentajeRetIva  Float           @default(0)
-  retencionIva      Float           @default(0)
-  totalAPagar       Float           @default(0)
-  tasaCambio        Float           @default(1)
-  totalUsd          Float           @default(0)
-  pagadoBs          Float           @default(0)
-  metodoPagoId      String?
-  metodoPago        MetodoPago?     @relation(fields: [metodoPagoId], references: [id])
-  delMes            Boolean         @default(true)
-  fechaPago         DateTime?
-  estadoPago        String          @default("POR PAGAR") // PAGADO o POR PAGAR
-  observaciones     String?
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  id               String          @id @default(cuid())
+  it               Int?
+  fechaFactura     DateTime
+  proveedorId      String
+  proveedor        Proveedor       @relation(fields: [proveedorId], references: [id])
+  categoriaId      String
+  categoria        CategoriaCompra @relation(fields: [categoriaId], references: [id])
+  notaEntrega      String?
+  numeroFactura    String?
+  numeroControl    String?
+  exento           Float           @default(0)
+  baseImponible    Float           @default(0)
+  iva              Float           @default(0)
+  porcentajeRetIva Float           @default(0)
+  retencionIva     Float           @default(0)
+  totalAPagar      Float           @default(0)
+  tasaCambio       Float           @default(1)
+  totalUsd         Float           @default(0)
+  pagadoBs         Float           @default(0)
+  metodoPagoId     String?
+  metodoPago       MetodoPago?     @relation(fields: [metodoPagoId], references: [id])
+  delMes           Boolean         @default(true)
+  fechaPago        DateTime?
+  estadoPago       String          @default("POR PAGAR") // PAGADO o POR PAGAR
+  observaciones    String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 }
 
 model Gasto {
-  id                String         @id @default(cuid())
-  it                Int?
-  fecha             DateTime
-  proveedorId       String
-  proveedor         Proveedor      @relation(fields: [proveedorId], references: [id])
-  concepto          String
-  categoriaId       String
-  categoria         CategoriaGasto @relation(fields: [categoriaId], references: [id])
-  notaEntrega       String?
-  numeroFactura     String?
-  numeroControl     String?
-  exento            Float          @default(0)
-  baseImponible     Float          @default(0)
-  iva               Float          @default(0)
-  porcentajeRetIva  Float          @default(0)
-  retencionIva      Float          @default(0)
-  totalAPagar       Float          @default(0)
-  tasaCambio        Float          @default(1)
-  totalUsd          Float          @default(0)
-  pagadoBs          Float          @default(0)
-  metodoPagoId      String?
-  metodoPago        MetodoPago?    @relation(fields: [metodoPagoId], references: [id])
-  delMes            Boolean        @default(true)
-  fechaPago         DateTime?
-  estadoPago        String         @default("POR PAGAR")
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
+  id               String         @id @default(cuid())
+  it               Int?
+  fecha            DateTime
+  proveedorId      String
+  proveedor        Proveedor      @relation(fields: [proveedorId], references: [id])
+  concepto         String
+  categoriaId      String
+  categoria        CategoriaGasto @relation(fields: [categoriaId], references: [id])
+  notaEntrega      String?
+  numeroFactura    String?
+  numeroControl    String?
+  exento           Float          @default(0)
+  baseImponible    Float          @default(0)
+  iva              Float          @default(0)
+  porcentajeRetIva Float          @default(0)
+  retencionIva     Float          @default(0)
+  totalAPagar      Float          @default(0)
+  tasaCambio       Float          @default(1)
+  totalUsd         Float          @default(0)
+  pagadoBs         Float          @default(0)
+  metodoPagoId     String?
+  metodoPago       MetodoPago?    @relation(fields: [metodoPagoId], references: [id])
+  delMes           Boolean        @default(true)
+  fechaPago        DateTime?
+  estadoPago       String         @default("POR PAGAR")
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
 }
 
 model Ingreso {
-  id                  String      @id @default(cuid())
-  fecha               DateTime
-  reporteZ            Float       @default(0)
-  notasEntrega        Float       @default(0)
-  igtf                Float       @default(0)
-  efectivoBolivares   Float       @default(0)
-  metodoPagoId        String?
-  metodoPago          MetodoPago? @relation(fields: [metodoPagoId], references: [id])
-  monedaExtranjera    Float       @default(0)
-  tasaCambio          Float       @default(1)
-  zelle               Float       @default(0)
-  binance             Float       @default(0)
-  banescoPanama       Float       @default(0)
-  bancos              Float       @default(0)
-  ventasSinIva        Float       @default(0)
-  ventasConIva        Float       @default(0)
-  ventasEnNe          Float       @default(0)
-  baseImponible       Float       @default(0)
-  iva                 Float       @default(0)
-  ventasDiariasUsd    Float       @default(0)
-  difVentasIngresos   Float       @default(0)
-  ingresosUsd         Float       @default(0)
-  createdAt           DateTime    @default(now())
-  updatedAt           DateTime    @updatedAt
+  id                String      @id @default(cuid())
+  fecha             DateTime
+  reporteZ          Float       @default(0)
+  notasEntrega      Float       @default(0)
+  igtf              Float       @default(0)
+  efectivoBolivares Float       @default(0)
+  metodoPagoId      String?
+  metodoPago        MetodoPago? @relation(fields: [metodoPagoId], references: [id])
+  monedaExtranjera  Float       @default(0)
+  tasaCambio        Float       @default(1)
+  zelle             Float       @default(0)
+  binance           Float       @default(0)
+  banescoPanama     Float       @default(0)
+  bancos            Float       @default(0)
+  ventasSinIva      Float       @default(0)
+  ventasConIva      Float       @default(0)
+  ventasEnNe        Float       @default(0)
+  baseImponible     Float       @default(0)
+  iva               Float       @default(0)
+  ventasDiariasUsd  Float       @default(0)
+  difVentasIngresos Float       @default(0)
+  ingresosUsd       Float       @default(0)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
 }
 
 model CuentaPorCobrar {
@@ -146,16 +148,16 @@ model CuentaPorCobrar {
 }
 
 model Usuario {
-  id            String    @id @default(cuid())
-  nombre        String
-  email         String    @unique
-  password      String
-  rol           Rol       @default(OPERADOR)
-  ordenesCreadas OrdenPago[] @relation("UsuarioSolicitante")
-  ordenesAprobadas OrdenPago[] @relation("UsuarioAprobador")
+  id                String      @id @default(cuid())
+  nombre            String
+  email             String      @unique
+  password          String
+  rol               Rol         @default(OPERADOR)
+  ordenesCreadas    OrdenPago[] @relation("UsuarioSolicitante")
+  ordenesAprobadas  OrdenPago[] @relation("UsuarioAprobador")
   ordenesEjecutadas OrdenPago[] @relation("UsuarioEjecutor")
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
 }
 
 enum Rol {
@@ -165,45 +167,45 @@ enum Rol {
 }
 
 model CuentaPorPagar {
-  id            String       @id @default(cuid())
-  proveedorId   String
-  proveedor     Proveedor    @relation(fields: [proveedorId], references: [id])
-  concepto      String
-  montoTotalBs  Float        @default(0)
-  montoTotalUsd Float        @default(0)
+  id               String      @id @default(cuid())
+  proveedorId      String
+  proveedor        Proveedor   @relation(fields: [proveedorId], references: [id])
+  concepto         String
+  montoTotalBs     Float       @default(0)
+  montoTotalUsd    Float       @default(0)
   fechaVencimiento DateTime?
-  estado        String       @default("PENDIENTE") // PENDIENTE, EN_PROCESO, PAGADO
-  ordenesPago   OrdenPago[]
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  estado           String      @default("PENDIENTE") // PENDIENTE, EN_PROCESO, PAGADO
+  ordenesPago      OrdenPago[]
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
 }
 
 model OrdenPago {
-  id            String         @id @default(cuid())
-  cxpId         String?
-  cxp           CuentaPorPagar? @relation(fields: [cxpId], references: [id])
-  concepto      String
-  montoBs       Float          @default(0)
-  montoUsd      Float          @default(0)
-  
+  id       String          @id @default(cuid())
+  cxpId    String?
+  cxp      CuentaPorPagar? @relation(fields: [cxpId], references: [id])
+  concepto String
+  montoBs  Float           @default(0)
+  montoUsd Float           @default(0)
+
   // Auditoria
   solicitadoPorId String
-  solicitadoPor   Usuario      @relation("UsuarioSolicitante", fields: [solicitadoPorId], references: [id])
-  
-  aprobadoPorId   String?
-  aprobadoPor     Usuario?     @relation("UsuarioAprobador", fields: [aprobadoPorId], references: [id])
-  
-  ejecutadoPorId  String?
-  ejecutadoPor    Usuario?     @relation("UsuarioEjecutor", fields: [ejecutadoPorId], references: [id])
-  
-  estado        String       @default("SOLICITADA") // SOLICITADA, APROBADA, RECHAZADA, EJECUTADA
+  solicitadoPor   Usuario @relation("UsuarioSolicitante", fields: [solicitadoPorId], references: [id])
+
+  aprobadoPorId String?
+  aprobadoPor   Usuario? @relation("UsuarioAprobador", fields: [aprobadoPorId], references: [id])
+
+  ejecutadoPorId String?
+  ejecutadoPor   Usuario? @relation("UsuarioEjecutor", fields: [ejecutadoPorId], references: [id])
+
+  estado         String    @default("SOLICITADA") // SOLICITADA, APROBADA, RECHAZADA, EJECUTADA
   fechaEjecucion DateTime?
-  
-  metodoPagoId  String?
-  metodoPago    MetodoPago?  @relation(fields: [metodoPagoId], references: [id])
-  
+
+  metodoPagoId String?
+  metodoPago   MetodoPago? @relation(fields: [metodoPagoId], references: [id])
+
   comprobanteRef String?
-  
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
