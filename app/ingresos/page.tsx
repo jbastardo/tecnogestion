@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ArrowDownToLine, Search, Plus, Trash2 } from "lucide-react";
+import { ArrowDownToLine, Search, Plus, Trash2, ArrowUpDown } from "lucide-react";
 import { NuevoIngresoModal } from "./NuevoIngresoModal";
 
 export default function IngresosPage() {
@@ -9,6 +9,7 @@ export default function IngresosPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   const fetchIngresos = () => {
     setLoading(true);
@@ -44,9 +45,24 @@ export default function IngresosPage() {
     }
   };
 
-  const filteredIngresos = ingresos.filter(ingreso => 
+  const formatCurrency = (val: any, isDivisa: boolean = false) => {
+    const symbol = isDivisa ? '$ ' : 'Bs. ';
+    return symbol + new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(val) || 0);
+  };
+
+  const toggleSort = () => {
+    setSortOrder(prev => prev === "desc" ? "asc" : "desc");
+  };
+
+  let filteredIngresos = ingresos.filter(ingreso => 
     String(ingreso.fecha || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  filteredIngresos = filteredIngresos.sort((a, b) => {
+    const dateA = new Date(a.fecha).getTime();
+    const dateB = new Date(b.fecha).getTime();
+    return sortOrder === "desc" ? dateB - dateA : dateA - dateB;
+  });
 
   return (
     <div className="space-y-6">
@@ -85,27 +101,32 @@ export default function IngresosPage() {
           <table className="w-full text-sm text-left">
             <thead className="text-xs text-muted-foreground bg-muted/50 uppercase border-b border-border">
               <tr>
-                <th className="px-4 py-3 font-medium">Fecha</th>
-                <th className="px-4 py-3 font-medium text-right">Reporte Z</th>
+                <th className="px-4 py-3 font-medium">
+                  <button onClick={toggleSort} className="flex items-center gap-1 hover:text-foreground transition-colors">
+                    Fecha <ArrowUpDown size={14} />
+                  </button>
+                </th>
+                <th className="px-4 py-3 font-medium text-right">Base Imponible Z</th>
+                <th className="px-4 py-3 font-medium text-right">IVA Z</th>
                 <th className="px-4 py-3 font-medium text-right">Nota Entrega</th>
                 <th className="px-4 py-3 font-medium text-right">Efectivo Bs</th>
                 <th className="px-4 py-3 font-medium text-right">Bancos</th>
-                <th className="px-4 py-3 font-medium text-right">Zelle</th>
-                <th className="px-4 py-3 font-medium text-right">Base Imp.</th>
-                <th className="px-4 py-3 font-medium text-right">IVA</th>
+                <th className="px-4 py-3 font-medium text-right">Efectivo $</th>
+                <th className="px-4 py-3 font-medium text-right">Zelle $</th>
+                <th className="px-4 py-3 font-medium text-right">Binance $</th>
                 <th className="px-4 py-3 font-medium text-center">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">
                     Cargando registros...
                   </td>
                 </tr>
               ) : filteredIngresos.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">
                     No hay registros encontrados.
                   </td>
                 </tr>
@@ -113,13 +134,14 @@ export default function IngresosPage() {
                 filteredIngresos.map((ingreso) => (
                   <tr key={ingreso.id} className="hover:bg-muted/50 transition-colors">
                     <td className="px-4 py-3 font-medium">{ingreso.fecha || "S/F"}</td>
-                    <td className="px-4 py-3 text-right">${(Number(ingreso.reporteZ) || 0).toFixed(2)}</td>
-                    <td className="px-4 py-3 text-right">${(Number(ingreso.notasEntrega) || 0).toFixed(2)}</td>
-                    <td className="px-4 py-3 text-right text-emerald-400">Bs. {(Number(ingreso.efectivoBs) || 0).toFixed(2)}</td>
-                    <td className="px-4 py-3 text-right text-blue-400">Bs. {(Number(ingreso.bancos) || 0).toFixed(2)}</td>
-                    <td className="px-4 py-3 text-right text-purple-400">${(Number(ingreso.zelle) || 0).toFixed(2)}</td>
-                    <td className="px-4 py-3 text-right">${(Number(ingreso.baseImponible) || 0).toFixed(2)}</td>
-                    <td className="px-4 py-3 text-right text-destructive">${(Number(ingreso.iva) || 0).toFixed(2)}</td>
+                    <td className="px-4 py-3 text-right">{formatCurrency(ingreso.baseImponibleZ)}</td>
+                    <td className="px-4 py-3 text-right">{formatCurrency(ingreso.ivaZ)}</td>
+                    <td className="px-4 py-3 text-right">{formatCurrency(ingreso.notasEntrega)}</td>
+                    <td className="px-4 py-3 text-right text-emerald-400">{formatCurrency(ingreso.efectivoBs)}</td>
+                    <td className="px-4 py-3 text-right text-blue-400">{formatCurrency(ingreso.bancos)}</td>
+                    <td className="px-4 py-3 text-right text-emerald-500">{formatCurrency(ingreso.usd, true)}</td>
+                    <td className="px-4 py-3 text-right text-purple-400">{formatCurrency(ingreso.zelle, true)}</td>
+                    <td className="px-4 py-3 text-right text-yellow-500">{formatCurrency(ingreso.binance, true)}</td>
                     <td className="px-4 py-3 text-center">
                       <button onClick={() => handleDelete(ingreso.id)} className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors" title="Eliminar Ingreso">
                         <Trash2 size={16} />

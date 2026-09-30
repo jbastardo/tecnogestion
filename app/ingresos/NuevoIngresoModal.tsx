@@ -4,16 +4,15 @@ import { X, Check } from "lucide-react";
 export function NuevoIngresoModal({ isOpen, onClose, onSave }: { isOpen: boolean, onClose: () => void, onSave: () => void }) {
   const [formData, setFormData] = useState({
     fecha: new Date().toISOString().split('T')[0],
-    reporteZ: "",
+    baseImponibleZ: "",
+    ivaZ: "",
+    igtfZ: "",
     notasEntrega: "",
-    igtf: "",
     efectivoBs: "",
     bancos: "",
+    usd: "",
     zelle: "",
     binance: "",
-    baseImponible: "",
-    iva: "",
-    metodoPago: ""
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -28,15 +27,15 @@ export function NuevoIngresoModal({ isOpen, onClose, onSave }: { isOpen: boolean
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
-          reporteZ: Number(formData.reporteZ),
+          baseImponibleZ: Number(formData.baseImponibleZ),
+          ivaZ: Number(formData.ivaZ),
+          igtfZ: Number(formData.igtfZ),
           notasEntrega: Number(formData.notasEntrega),
-          igtf: Number(formData.igtf),
           efectivoBs: Number(formData.efectivoBs),
           bancos: Number(formData.bancos),
+          usd: Number(formData.usd),
           zelle: Number(formData.zelle),
           binance: Number(formData.binance),
-          baseImponible: Number(formData.baseImponible),
-          iva: Number(formData.iva)
         })
       });
       if (res.ok) {
@@ -44,9 +43,8 @@ export function NuevoIngresoModal({ isOpen, onClose, onSave }: { isOpen: boolean
         onClose();
         setFormData({
           fecha: new Date().toISOString().split('T')[0],
-          reporteZ: "", notasEntrega: "", igtf: "",
-          efectivoBs: "", bancos: "", zelle: "", binance: "",
-          baseImponible: "", iva: "", metodoPago: ""
+          baseImponibleZ: "", ivaZ: "", igtfZ: "", notasEntrega: "", 
+          efectivoBs: "", bancos: "", usd: "", zelle: "", binance: ""
         });
       } else {
         alert("Error al guardar el ingreso");
@@ -76,23 +74,23 @@ export function NuevoIngresoModal({ isOpen, onClose, onSave }: { isOpen: boolean
               <input type="date" required value={formData.fecha} onChange={e => setFormData({...formData, fecha: e.target.value})} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary" />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">Reporte Z (USD)</label>
-              <input type="number" step="0.01" value={formData.reporteZ} onChange={e => setFormData({...formData, reporteZ: e.target.value})} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="0.00" />
+              <label className="text-sm font-medium text-muted-foreground">Base Imponible Z (Bs.)</label>
+              <input type="number" step="0.01" value={formData.baseImponibleZ} onChange={e => setFormData({...formData, baseImponibleZ: e.target.value})} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="0.00" />
             </div>
           </div>
 
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">Base Imponible ($)</label>
-              <input type="number" step="0.01" value={formData.baseImponible} onChange={e => setFormData({...formData, baseImponible: e.target.value})} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="0.00" />
+              <label className="text-sm font-medium text-muted-foreground">IVA Z (Bs.)</label>
+              <input type="number" step="0.01" value={formData.ivaZ} onChange={e => setFormData({...formData, ivaZ: e.target.value})} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="0.00" />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">IVA ($)</label>
-              <input type="number" step="0.01" value={formData.iva} onChange={e => setFormData({...formData, iva: e.target.value})} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="0.00" />
+              <label className="text-sm font-medium text-muted-foreground">IGTF Z (Bs.)</label>
+              <input type="number" step="0.01" value={formData.igtfZ} onChange={e => setFormData({...formData, igtfZ: e.target.value})} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="0.00" />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">IGTF ($)</label>
-              <input type="number" step="0.01" value={formData.igtf} onChange={e => setFormData({...formData, igtf: e.target.value})} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="0.00" />
+              <label className="text-sm font-medium text-muted-foreground">Nota Entrega (Bs.)</label>
+              <input type="number" step="0.01" value={formData.notasEntrega} onChange={e => setFormData({...formData, notasEntrega: e.target.value})} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="0.00" />
             </div>
           </div>
 
@@ -100,27 +98,26 @@ export function NuevoIngresoModal({ isOpen, onClose, onSave }: { isOpen: boolean
             <h4 className="text-sm font-medium mb-2">Desglose de Pago</h4>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-xs font-medium text-emerald-400">Efectivo Bs.</label>
+                <label className="text-xs font-medium text-emerald-400">Efectivo (Bs.)</label>
                 <input type="number" step="0.01" value={formData.efectivoBs} onChange={e => setFormData({...formData, efectivoBs: e.target.value})} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="0.00" />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-medium text-blue-400">Bancos (Punto/PagoMóvil)</label>
+                <label className="text-xs font-medium text-blue-400">Bancos (Punto/PagoMóvil) (Bs.)</label>
                 <input type="number" step="0.01" value={formData.bancos} onChange={e => setFormData({...formData, bancos: e.target.value})} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="0.00" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-emerald-500">Efectivo ($)</label>
+                <input type="number" step="0.01" value={formData.usd} onChange={e => setFormData({...formData, usd: e.target.value})} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="0.00" />
               </div>
               <div className="space-y-2">
                 <label className="text-xs font-medium text-purple-400">Zelle ($)</label>
                 <input type="number" step="0.01" value={formData.zelle} onChange={e => setFormData({...formData, zelle: e.target.value})} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="0.00" />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-medium text-yellow-400">Binance (USDT)</label>
+                <label className="text-xs font-medium text-yellow-500">Binance ($)</label>
                 <input type="number" step="0.01" value={formData.binance} onChange={e => setFormData({...formData, binance: e.target.value})} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="0.00" />
               </div>
             </div>
-          </div>
-          
-          <div className="space-y-2">
-             <label className="text-sm font-medium text-muted-foreground">Notas de Entrega / Observación</label>
-             <input type="text" value={formData.notasEntrega} onChange={e => setFormData({...formData, notasEntrega: e.target.value})} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="Monto o descripción..." />
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t border-border">

@@ -151,6 +151,7 @@ export async function GET() {
           data: {
             fecha: parsedDate,
             reporteZ: parseFloat(ingreso["REPORTE Z"] || 0),
+            iva: parseFloat(ingreso["__EMPTY_1"] || 0),
             notasEntrega: parseFloat(ingreso["NOTAS DE ENTREGA"] || 0),
             igtf: parseFloat(ingreso["IGTF"] || 0),
             efectivoBolivares: parseFloat(ingreso["EFECTIVO  BOLIVARES"] || 0),

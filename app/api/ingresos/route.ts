@@ -13,15 +13,15 @@ export async function GET() {
     const formattedIngresos = ingresos.map((ingreso) => ({
       id: ingreso.id,
       fecha: ingreso.fecha.toISOString().split('T')[0],
-      reporteZ: ingreso.reporteZ,
+      baseImponibleZ: ingreso.reporteZ,
+      ivaZ: ingreso.iva,
+      igtfZ: ingreso.igtf,
       notasEntrega: ingreso.notasEntrega,
-      igtf: ingreso.igtf,
       efectivoBs: ingreso.efectivoBolivares,
       bancos: ingreso.bancos,
+      usd: ingreso.monedaExtranjera,
       zelle: ingreso.zelle,
       binance: ingreso.binance,
-      baseImponible: ingreso.baseImponible,
-      iva: ingreso.iva,
     }));
 
     return NextResponse.json({ ingresos: formattedIngresos });
@@ -35,8 +35,8 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { 
-      fecha, reporteZ, notasEntrega, igtf, 
-      efectivoBs, bancos, zelle, binance, baseImponible, iva, metodoPago 
+      fecha, baseImponibleZ, ivaZ, igtfZ, notasEntrega, 
+      efectivoBs, bancos, usd, zelle, binance, metodoPago 
     } = body;
 
     let metodoPagoId = null;
@@ -52,15 +52,15 @@ export async function POST(req: Request) {
     const nuevoIngreso = await prisma.ingreso.create({
       data: {
         fecha: new Date(fecha),
-        reporteZ: Number(reporteZ) || 0,
+        reporteZ: Number(baseImponibleZ) || 0,
+        iva: Number(ivaZ) || 0,
+        igtf: Number(igtfZ) || 0,
         notasEntrega: Number(notasEntrega) || 0,
-        igtf: Number(igtf) || 0,
         efectivoBolivares: Number(efectivoBs) || 0,
         bancos: Number(bancos) || 0,
+        monedaExtranjera: Number(usd) || 0,
         zelle: Number(zelle) || 0,
         binance: Number(binance) || 0,
-        baseImponible: Number(baseImponible) || 0,
-        iva: Number(iva) || 0,
         metodoPagoId,
       }
     });
