@@ -19,7 +19,7 @@ export default function IngresosPage() {
   }, []);
 
   const filteredIngresos = ingresos.filter(ingreso => 
-    ingreso.fecha?.toLowerCase().includes(searchTerm.toLowerCase())
+    String(ingreso.fecha || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
