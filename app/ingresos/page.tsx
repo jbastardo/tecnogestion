@@ -1,14 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ArrowDownToLine, Search } from "lucide-react";
+import { ArrowDownToLine, Search, Plus, Trash2 } from "lucide-react";
+import { NuevoIngresoModal } from "./NuevoIngresoModal";
 
 export default function IngresosPage() {
   const [ingresos, setIngresos] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  useEffect(() => {
+  const fetchIngresos = () => {
+    setLoading(true);
     fetch('/api/ingresos')
       .then(res => res.json())
       .then(data => {
@@ -16,7 +19,30 @@ export default function IngresosPage() {
         setLoading(false);
       })
       .catch(console.error);
+  };
+
+  useEffect(() => {
+    fetchIngresos();
   }, []);
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("¿Estás seguro de que deseas eliminar este ingreso?")) return;
+    try {
+      const res = await fetch('/api/ingresos', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      if (res.ok) {
+        fetchIngresos();
+      } else {
+        alert("Error al eliminar el ingreso");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Error de conexión");
+    }
+  };
 
   const filteredIngresos = ingresos.filter(ingreso => 
     String(ingreso.fecha || "").toLowerCase().includes(searchTerm.toLowerCase())
@@ -30,9 +56,13 @@ export default function IngresosPage() {
           <p className="text-muted-foreground">Flujo diario de entradas y desgloses de pago</p>
         </div>
         <div className="flex gap-2">
-          <button className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-2">
+          <button className="px-4 py-2 rounded-lg text-sm font-medium border border-border hover:bg-secondary transition-colors flex items-center gap-2">
             <ArrowDownToLine size={16} />
             Exportar CSV
+          </button>
+          <button onClick={() => setIsModalOpen(true)} className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-2">
+            <Plus size={16} />
+            Nuevo Ingreso
           </button>
         </div>
       </div>
@@ -63,18 +93,19 @@ export default function IngresosPage() {
                 <th className="px-4 py-3 font-medium text-right">Zelle</th>
                 <th className="px-4 py-3 font-medium text-right">Base Imp.</th>
                 <th className="px-4 py-3 font-medium text-right">IVA</th>
+                <th className="px-4 py-3 font-medium text-center">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
                     Cargando registros...
                   </td>
                 </tr>
               ) : filteredIngresos.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
                     No hay registros encontrados.
                   </td>
                 </tr>
@@ -89,6 +120,11 @@ export default function IngresosPage() {
                     <td className="px-4 py-3 text-right text-purple-400">${(Number(ingreso.zelle) || 0).toFixed(2)}</td>
                     <td className="px-4 py-3 text-right">${(Number(ingreso.baseImponible) || 0).toFixed(2)}</td>
                     <td className="px-4 py-3 text-right text-destructive">${(Number(ingreso.iva) || 0).toFixed(2)}</td>
+                    <td className="px-4 py-3 text-center">
+                      <button onClick={() => handleDelete(ingreso.id)} className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors" title="Eliminar Ingreso">
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}
@@ -104,6 +140,12 @@ export default function IngresosPage() {
           </div>
         </div>
       </div>
+
+      <NuevoIngresoModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onSave={fetchIngresos} 
+      />
     </div>
   );
 }
