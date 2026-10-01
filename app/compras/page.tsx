@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ArrowDownToLine, Search, Plus, Trash2 } from "lucide-react";
+import { ArrowDownToLine, Search, Plus, Trash2, ArrowUpDown } from "lucide-react";
 import { NuevaCompraModal } from "./NuevaCompraModal";
 
 export default function ComprasPage() {
