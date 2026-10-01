@@ -82,10 +82,11 @@ export default function ComprasPage() {
     totalOperacion: acc.totalOperacion + (curr.totalOperacion || 0),
     baseImponible: acc.baseImponible + (curr.baseImponible || 0),
     impuestos: acc.impuestos + (curr.impuestos || 0),
+    retencion25: acc.retencion25 + (curr.retencion25 || 0),
     pagadoTotal: acc.pagadoTotal + (curr.pagadoTotal || 0),
     cxp: acc.cxp + (curr.cxp || 0),
   }), {
-    totalOperacion: 0, baseImponible: 0, impuestos: 0, pagadoTotal: 0, cxp: 0
+    totalOperacion: 0, baseImponible: 0, impuestos: 0, retencion25: 0, pagadoTotal: 0, cxp: 0
   });
 
   if (sortConfig !== null) {
@@ -210,6 +211,12 @@ export default function ComprasPage() {
                   </button>
                   <div className="text-xs font-bold mt-1">{formatCurrency(totales.impuestos, true)}</div>
                 </th>
+                <th className="px-4 py-3 font-medium text-right text-purple-400 align-top">
+                  <button onClick={() => handleSort('retencion25')} className="flex items-center justify-end gap-1 hover:text-foreground transition-colors w-full">
+                    Retención 25% <ArrowUpDown size={14} className={sortConfig?.key === 'retencion25' ? 'text-primary' : 'opacity-50'} />
+                  </button>
+                  <div className="text-xs font-bold mt-1">{formatCurrency(totales.retencion25, true)}</div>
+                </th>
                 <th className="px-4 py-3 font-medium text-right align-top">
                   <button onClick={() => handleSort('pagadoTotal')} className="flex items-center justify-end gap-1 hover:text-foreground transition-colors w-full">
                     Pagado Total <ArrowUpDown size={14} className={sortConfig?.key === 'pagadoTotal' ? 'text-primary' : 'opacity-50'} />
@@ -253,6 +260,7 @@ export default function ComprasPage() {
                     <td className="px-4 py-3 text-right font-semibold">{formatCurrency(compra.totalOperacion, true)}</td>
                     <td className="px-4 py-3 text-right text-emerald-400">{formatCurrency(compra.baseImponible, true)}</td>
                     <td className="px-4 py-3 text-right text-amber-400">{formatCurrency(compra.impuestos, true)}</td>
+                    <td className="px-4 py-3 text-right text-purple-400">{formatCurrency(compra.retencion25, true)}</td>
                     <td className="px-4 py-3 text-right text-emerald-600">{formatCurrency(compra.pagadoTotal, true)}</td>
                     <td className="px-4 py-3 text-right text-red-400">{formatCurrency(compra.cxp, true)}</td>
                     <td className="px-4 py-3 text-center">
@@ -283,6 +291,7 @@ export default function ComprasPage() {
                 <td className="px-4 py-3 text-right">{formatCurrency(totales.totalOperacion, true)}</td>
                 <td className="px-4 py-3 text-right text-emerald-400">{formatCurrency(totales.baseImponible, true)}</td>
                 <td className="px-4 py-3 text-right text-amber-400">{formatCurrency(totales.impuestos, true)}</td>
+                <td className="px-4 py-3 text-right text-purple-400">{formatCurrency(totales.retencion25, true)}</td>
                 <td className="px-4 py-3 text-right text-emerald-600">{formatCurrency(totales.pagadoTotal, true)}</td>
                 <td className="px-4 py-3 text-right text-red-400">{formatCurrency(totales.cxp, true)}</td>
                 <td colSpan={2}></td>

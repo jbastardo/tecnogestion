@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 export async function GET(req: Request) {
   try {
     const odoo = new OdooService({
-      url: process.env.ODOO_URL || 'https://onprotec.shop',
+      url: process.env.ODOO_URL || 'https://www.onprotec.shop',
       db: process.env.ODOO_DB || 'binaural-dev-onprotec-16-release-8815487',
       username: process.env.ODOO_USERNAME || 'juan@onprotec.com',
       password: process.env.ODOO_PASSWORD || '47028d0d8c58c126b1e9276bec43158fc0c7ee41',
@@ -17,7 +17,7 @@ export async function GET(req: Request) {
     const fechaInicio = searchParams.get('inicio') || new Date().toISOString().split('T')[0];
     const fechaFin = searchParams.get('fin') || new Date().toISOString().split('T')[0];
 
-    const compras = await odoo.searchRead(
+    const moves = await odoo.searchRead(
       'account.move',
       [
         ['move_type', 'in', ['in_invoice', 'in_receipt']], 
@@ -25,30 +25,84 @@ export async function GET(req: Request) {
         ['invoice_date', '>=', fechaInicio],
         ['invoice_date', '<=', fechaFin]
       ],
-      ['name', 'invoice_date', 'partner_id', 'amount_untaxed', 'amount_tax', 'amount_total', 'payment_state', 'move_type', 'amount_residual'],
-      0, 100 // Límite de 100 para no saturar
+      ['name', 'invoice_date', 'partner_id', 'amount_untaxed', 'amount_tax', 'amount_total', 'payment_state', 'move_type', 'amount_residual', 'invoice_line_ids'],
+      0, 200 // Límite de 200
     );
 
-    const formattedCompras = compras.map((compra: any) => {
+    // Obtener todas las líneas de factura
+    const allLineIds = moves.flatMap((m: any) => m.invoice_line_ids || []);
+    let linesMap: any = {};
+    
+    if (allLineIds.length > 0) {
+      const lines = await odoo.searchRead(
+        'account.move.line',
+        [['id', 'in', allLineIds]],
+        ['account_id', 'price_subtotal', 'debit', 'credit', 'price_total'],
+        0, 10000
+      );
+      lines.forEach((line: any) => {
+        linesMap[line.id] = line;
+      });
+    }
+
+    const formattedCompras: any[] = [];
+
+    for (const compra of moves) {
       const esFiscal = compra.move_type === 'in_invoice';
-      const cxc = compra.amount_residual || 0; // Amount still owed (CxP in this case, but we'll map to it)
+      
+      let isGasto = false;
+      let hasCompraMercancia = false;
+      
+      let baseImponible = 0;
+      let retencion25 = 0;
+
+      const lineas = (compra.invoice_line_ids || []).map((id: number) => linesMap[id]).filter(Boolean);
+      
+      for (const line of lineas) {
+        if (!line.account_id || !line.account_id[1]) continue;
+        const accountStr = line.account_id[1];
+        
+        if (accountStr.startsWith('5111001')) {
+          hasCompraMercancia = true;
+          baseImponible += line.price_subtotal || 0;
+        }
+        else if (accountStr.startsWith('2131004')) {
+          retencion25 += line.credit || line.debit || 0; // Dependiendo de si es débito o crédito
+        }
+        else if (accountStr.startsWith('6') || accountStr.startsWith('7')) {
+          isGasto = true;
+        }
+      }
+
+      // Filtrar: Si es netamente un gasto (tiene cuenta 6 o 7 pero NO tiene 5111001), lo ignoramos de Compras
+      if (isGasto && !hasCompraMercancia) {
+        continue;
+      }
+
+      // Si no tiene 5111001 pero tampoco es un gasto (quizás una devolución, notas, u otra cuenta), lo dejamos pasar con el monto base general
+      if (!hasCompraMercancia) {
+        baseImponible = compra.amount_untaxed || 0;
+      }
+
+      const cxc = compra.amount_residual || 0;
       const pagadoTotal = compra.amount_total - cxc;
 
-      return {
+      formattedCompras.push({
         id: compra.id.toString(),
         fecha: compra.invoice_date || "S/F",
         proveedor: Array.isArray(compra.partner_id) ? compra.partner_id[1] : "Desconocido",
         tipoOperacion: esFiscal ? "Factura" : "Nota de Entrega",
         referencia: compra.name || "N/A",
-        exento: 0, // Simplificación
-        baseImponible: compra.amount_untaxed || 0,
+        exento: 0,
+        baseImponible: baseImponible,
         impuestos: compra.amount_tax || 0,
+        retencion25: retencion25,
         totalOperacion: compra.amount_total || 0,
         pagadoTotal: pagadoTotal,
         cxp: cxc,
         estadoPago: compra.payment_state === "paid" ? "Pagado" : "Pendiente",
-      }
-    });
+      });
+    }
 
     return NextResponse.json({ compras: formattedCompras });
   } catch (error: any) {
