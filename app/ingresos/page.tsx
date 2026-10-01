@@ -92,10 +92,11 @@ export default function IngresosPage() {
     pagadoTotal: acc.pagadoTotal + (curr.pagadoTotal || 0),
     pagadoUSD: acc.pagadoUSD + (curr.pagadoUSD || 0),
     pagadoBs: acc.pagadoBs + (curr.pagadoBs || 0),
+    pagadoBsReal: acc.pagadoBsReal + (curr.pagadoBsReal || 0),
     pagadoRetencion: acc.pagadoRetencion + (curr.pagadoRetencion || 0),
     cxc: acc.cxc + (curr.cxc || 0),
   }), {
-    totalOperacion: 0, baseImponible: 0, impuestos: 0, igtf: 0, pagadoTotal: 0, pagadoUSD: 0, pagadoBs: 0, pagadoRetencion: 0, cxc: 0
+    totalOperacion: 0, baseImponible: 0, impuestos: 0, igtf: 0, pagadoTotal: 0, pagadoUSD: 0, pagadoBs: 0, pagadoBsReal: 0, pagadoRetencion: 0, cxc: 0
   });
 
   if (sortConfig !== null) {
@@ -236,9 +237,14 @@ export default function IngresosPage() {
                     Pagos USD <ArrowUpDown size={14} className={sortConfig?.key === 'pagadoUSD' ? 'text-primary' : 'opacity-50'} />
                   </button>
                 </th>
+                <th className="px-4 py-3 font-medium text-right text-muted-foreground">
+                  <button onClick={() => handleSort('tasaAplicada')} className="flex items-center justify-end gap-1 hover:text-foreground transition-colors w-full">
+                    Tasa <ArrowUpDown size={14} className={sortConfig?.key === 'tasaAplicada' ? 'text-primary' : 'opacity-50'} />
+                  </button>
+                </th>
                 <th className="px-4 py-3 font-medium text-right text-blue-400">
-                  <button onClick={() => handleSort('pagadoBs')} className="flex items-center justify-end gap-1 hover:text-foreground transition-colors w-full">
-                    Pagos Bs (Eq. USD) <ArrowUpDown size={14} className={sortConfig?.key === 'pagadoBs' ? 'text-primary' : 'opacity-50'} />
+                  <button onClick={() => handleSort('pagadoBsReal')} className="flex items-center justify-end gap-1 hover:text-foreground transition-colors w-full">
+                    Pagos Bs <ArrowUpDown size={14} className={sortConfig?.key === 'pagadoBsReal' ? 'text-primary' : 'opacity-50'} />
                   </button>
                 </th>
                 <th className="px-4 py-3 font-medium text-right text-purple-400">
@@ -285,15 +291,18 @@ export default function IngresosPage() {
                     <td className="px-4 py-3 text-right text-indigo-400">
                       {formatCurrency(ingreso.pagadoUSD, true)}
                     </td>
+                    <td className="px-4 py-3 text-right text-muted-foreground">
+                      {ingreso.tasaAplicada ? Number(ingreso.tasaAplicada).toFixed(2) : '-'}
+                    </td>
                     <td className="px-4 py-3 text-right text-blue-400 group relative">
-                      {formatCurrency(ingreso.pagadoBs, true)}
+                      {formatCurrency(ingreso.pagadoBsReal, false)}
                       {ingreso.pagos && ingreso.pagos.length > 0 && (
                         <div className="absolute hidden group-hover:block bg-popover text-popover-foreground p-2 rounded shadow-lg text-xs z-10 w-48 right-0 border border-border">
                           <div className="font-semibold mb-1 border-b border-border pb-1">Métodos de Pago</div>
                           {ingreso.pagos.map((p: any, i: number) => (
                             <div key={i} className="flex justify-between py-0.5">
                               <span className="truncate mr-2 text-muted-foreground">{p.metodo}</span>
-                              <span className="font-medium">{formatCurrency(p.monto, true)}</span>
+                              <span className="font-medium">{formatCurrency(p.montoReal || p.montoUSD, !p.esBs)}</span>
                             </div>
                           ))}
                         </div>
@@ -319,7 +328,8 @@ export default function IngresosPage() {
                 <td className="px-4 py-3 text-right text-orange-400">{formatCurrency(totales.igtf, true)}</td>
                 <td className="px-4 py-3 text-right text-emerald-600">{formatCurrency(totales.pagadoTotal, true)}</td>
                 <td className="px-4 py-3 text-right text-indigo-400">{formatCurrency(totales.pagadoUSD, true)}</td>
-                <td className="px-4 py-3 text-right text-blue-400">{formatCurrency(totales.pagadoBs, true)}</td>
+                <td className="px-4 py-3 text-right text-muted-foreground">-</td>
+                <td className="px-4 py-3 text-right text-blue-400">{formatCurrency(totales.pagadoBsReal, false)}</td>
                 <td className="px-4 py-3 text-right text-purple-400">{formatCurrency(totales.pagadoRetencion, true)}</td>
                 <td className="px-4 py-3 text-right text-red-400">{formatCurrency(totales.cxc, true)}</td>
                 <td></td>

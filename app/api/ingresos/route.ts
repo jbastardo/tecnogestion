@@ -41,7 +41,7 @@ export async function GET(req: Request) {
       allPayments = await odoo.searchRead(
         'pos.payment',
         [['id', 'in', allPaymentIds]],
-        ['payment_method_id', 'amount', 'pos_order_id']
+        ['payment_method_id', 'amount', 'pos_order_id', 'foreign_rate', 'foreign_amount']
       );
     }
 
@@ -56,47 +56,55 @@ export async function GET(req: Request) {
       const orderPayments = allPayments.filter(p => p.pos_order_id && p.pos_order_id[0] === order.id);
       
       let pagadoUSD = 0;
-      let pagadoBs = 0; 
-      let pagadoCredito = 0; // Se considerará CxC
+      let pagadoBs = 0; // Este será el equivalente en USD
+      let pagadoBsReal = 0; // Monto real en Bs
+      let pagadoCredito = 0; 
       let pagadoRetencion = 0;
+      let tasaAplicada = 0;
       
       const desglosePagos = orderPayments.map(p => {
         const methodName = (p.payment_method_id && p.payment_method_id[1]) ? p.payment_method_id[1].toLowerCase() : '';
         
-        // 1. Es Crédito (CxC)
         const isCredito = methodName.includes('crédito') || methodName.includes('credito') || methodName.includes('cashea') || methodName.includes('pxc') || methodName.includes('cxc');
-        // 2. Es Retención
         const isRetencion = methodName.includes('retencion') || methodName.includes('retención');
         
-        // 3. Determinar Moneda Base
-        let isBs = methodName.includes('bs') || methodName.includes('bolivar') || methodName.includes('pago movil') || methodName.includes('punto') || methodName.includes('transferencia') || methodName.includes('pabilo venezuela') || methodName.includes('megasoft') || methodName.includes('bancamiga');
-        let isUSD = methodName.includes('$') || methodName.includes('zelle') || methodName.includes('binance') || methodName.includes('panama') || methodName.includes('verde') || methodName.includes('pabilo binance') || methodName.includes('saldo a favor');
+        let isBs = methodName.includes('bs') || methodName.includes('bolivar') || methodName.includes('pago movil') || methodName.includes('punto') || methodName.includes('transferencia') || methodName.includes('pabilo venezuela') || methodName.includes('megasoft') || methodName.includes('bancamiga') || methodName.includes('venezuela') || methodName.includes('pdv');
+        let isUSD = methodName.includes('$') || methodName.includes('zelle') || methodName.includes('binance') || methodName.includes('panama') || methodName.includes('verde') || methodName.includes('pabilo binance') || methodName.includes('saldo a favor') || methodName.includes('dolares') || methodName.includes('dólar') || methodName.includes('dolar');
 
-        // Reglas especiales
         if (isCredito) {
-          isUSD = true; // Por regla de negocio, los créditos se consideran en $
+          isUSD = true; 
           isBs = false;
         }
 
-        // Si no se detectó moneda explícita y no es crédito/retención, asume Bs por defecto
         if (!isBs && !isUSD && !isRetencion) {
           isBs = true; 
         }
 
-        // Sumarizadores
+        const montoBaseUSD = p.amount || 0;
+        const montoExtranjero = p.foreign_amount || 0;
+        const tasa = p.foreign_rate || 0;
+        
+        // Guardar la mayor tasa encontrada para mostrarla en la orden
+        if (tasa > tasaAplicada) {
+          tasaAplicada = tasa;
+        }
+
         if (isRetencion) {
-          pagadoRetencion += p.amount;
+          pagadoRetencion += montoBaseUSD;
         } else if (isCredito) {
-          pagadoCredito += p.amount;
+          pagadoCredito += montoBaseUSD;
         } else if (isUSD) {
-          pagadoUSD += p.amount;
+          pagadoUSD += montoBaseUSD;
         } else if (isBs) {
-          pagadoBs += p.amount; 
+          pagadoBs += montoBaseUSD;
+          pagadoBsReal += montoExtranjero;
         }
 
         return {
           metodo: p.payment_method_id ? p.payment_method_id[1] : 'Desconocido',
-          monto: p.amount,
+          montoUSD: montoBaseUSD,
+          montoReal: isBs ? montoExtranjero : montoBaseUSD,
+          tasa: tasa,
           esBs: isBs,
           esCredito: isCredito,
           esRetencion: isRetencion,
@@ -121,7 +129,9 @@ export async function GET(req: Request) {
         pagos: desglosePagos,
         pagadoUSD,
         pagadoBs,
-        pagadoRetencion
+        pagadoBsReal,
+        pagadoRetencion,
+        tasaAplicada
       };
     });
 
