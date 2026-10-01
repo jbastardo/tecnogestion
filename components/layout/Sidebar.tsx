@@ -24,7 +24,7 @@ export default function Sidebar() {
     { href: "/compras", label: "Compras", icon: ShoppingCart },
     { href: "/cxc", label: "Cuentas por Cobrar", icon: Users },
     { href: "/caja", label: "Caja & Bancos", icon: Landmark },
-    { href: "/cxp", label: "Gastos CXP", icon: Receipt },
+    { href: "/gastos", label: "Gastos CXP", icon: Receipt },
     { href: "/tesoreria", label: "Tesorería", icon: Briefcase },
     { href: "/roles", label: "Roles y Permisos", icon: Shield },
   ];
