@@ -93,6 +93,7 @@ Es el centro de mando. Recolecta indicadores de salud de la empresa con los sigu
 ### 6. Gastos CXP
 * **Origen:** Híbrido (Odoo / Local).
 * **Lógica de Clasificación:** Toda compra o factura de proveedor proveniente de Odoo que afecte una cuenta contable de **categoría 6 o 7** (ej. 6xxxxx o 7xxxxx) se excluye automáticamente del módulo de Compras y aterriza en esta sección como un Gasto.
+* **Retención de Impuestos (25%):** Al igual que en Compras, si la factura del gasto posee una línea que afecte la cuenta `2131004`, se extrae el monto para mostrar la retención aplicada al gasto.
 * **Creación Hacia Odoo:** Su función también es crear en Odoo los gastos según el tipo de documento (Factura o Nota), utilizando un concepto o servicio configurado para volcar gastos a contabilidad sin distorsionar inventarios.
 
 ### 7. Tesorería
