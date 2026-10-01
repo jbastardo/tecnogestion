@@ -59,8 +59,8 @@ El desarrollo cuenta con implementaciones transversales en las tablas para asegu
 ### 1. Dashboard (Resumen General)
 Es el centro de mando. Recolecta indicadores de salud de la empresa con los siguientes renglones específicos:
 * **VENTAS:** Ingresos (Bs y $), CxC (método de pago "crédito"), e Impuestos.
-* **COMPRAS:** Mercancías y 25% Pago de IVA.
-* **GASTOS:** Nómina, Servicios y Gastos Operativos.
+* **COMPRAS:** Mercancías (Cuenta `5111001`) y 25% Pago de IVA (Cuenta `2131004`).
+* **GASTOS:** Nómina, Servicios y Gastos Operativos (Cuentas categoría `6` y `7`).
 * **MOVIMIENTOS:** Bancos (Bs y $) y Cajas (Bs y $).
 
 ### 2. Ingresos (Ventas)
@@ -78,7 +78,10 @@ Es el centro de mando. Recolecta indicadores de salud de la empresa con los sigu
 ### 3. Compras (Inventario)
 * **Origen:** 100% Odoo (`account.move` para facturas y devoluciones de proveedores).
 * **Lógica Estructural:** Aplica las mismas capacidades de navegación y UX del módulo de Ingresos (Paginación, Sticky Headers, Sumatorias en Títulos, Ordenamientos).
-* **Separación Operativa:** Identifica automáticamente Documentos Fiscales (con Base Imponible e Impuestos desglosados) y Documentos No Fiscales (Notas de Entrega). Identifica el Estado de Pago (Pagado vs CxP).
+* **Separación Operativa y Contable:**
+  * **Compra de Mercancías:** Solo se consideran Compras aquellas facturas cuyas líneas afecten la cuenta contable `5111001`.
+  * **Retención de Impuestos (25%):** Se extrae específicamente el monto de las líneas que afecten la cuenta contable `2131004`.
+  * **Documentos Fiscales vs No Fiscales:** Identifica automáticamente si poseen Base Imponible e Impuestos desglosados.
 
 ### 4. Cuentas por Cobrar (CxC)
 * **Lógica:** Se auditan las ventas de Odoo para identificar operaciones donde el cliente adeuda una porción (Cashea, créditos corporativos). Estos montos entran a un seguimiento de "Cuentas por Cobrar" directo del módulo de Ingresos/Dashboard.
@@ -89,7 +92,8 @@ Es el centro de mando. Recolecta indicadores de salud de la empresa con los sigu
 
 ### 6. Gastos CXP
 * **Origen:** Híbrido (Odoo / Local).
-* **Lógica:** Esta sección unifica Gastos y Cuentas por Pagar. Su función es **crear en Odoo** los gastos según el tipo de documento: Factura (fiscal, con nro. de factura y control, BI, imp) o Nota (no fiscal, con o sin referencia). Utiliza un concepto/servicio configurado en Odoo para volcar los gastos directamente a contabilidad sin distorsionar inventarios.
+* **Lógica de Clasificación:** Toda compra o factura de proveedor proveniente de Odoo que afecte una cuenta contable de **categoría 6 o 7** (ej. 6xxxxx o 7xxxxx) se excluye automáticamente del módulo de Compras y aterriza en esta sección como un Gasto.
+* **Creación Hacia Odoo:** Su función también es crear en Odoo los gastos según el tipo de documento (Factura o Nota), utilizando un concepto o servicio configurado para volcar gastos a contabilidad sin distorsionar inventarios.
 
 ### 7. Tesorería
 * **Origen:** PostgreSQL (Local).
