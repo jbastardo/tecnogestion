@@ -1,9 +1,34 @@
 "use client";
 
 import Link from "next/link";
-import { LayoutDashboard, FileText, ShoppingCart, DollarSign, Settings, LogOut } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { 
+  LayoutDashboard, 
+  TrendingUp, 
+  ShoppingCart, 
+  Users, 
+  Landmark, 
+  CreditCard, 
+  Briefcase, 
+  Receipt, 
+  Shield, 
+  LogOut 
+} from "lucide-react";
 
 export default function Sidebar() {
+  const pathname = usePathname();
+
+  const navItems = [
+    { href: "/", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/ingresos", label: "Ingresos", icon: TrendingUp },
+    { href: "/compras", label: "Compras", icon: ShoppingCart },
+    { href: "/cxc", label: "Cuentas por Cobrar", icon: Users },
+    { href: "/caja", label: "Caja & Bancos", icon: Landmark },
+    { href: "/cxp", label: "Gastos CXP", icon: Receipt },
+    { href: "/tesoreria", label: "Tesorería", icon: Briefcase },
+    { href: "/roles", label: "Roles y Permisos", icon: Shield },
+  ];
+
   return (
     <div className="flex h-screen w-64 flex-col bg-card border-r border-border">
       <div className="flex h-16 items-center justify-center border-b border-border">
@@ -12,30 +37,23 @@ export default function Sidebar() {
         </h1>
       </div>
       <nav className="flex-1 space-y-2 overflow-y-auto p-4">
-        <Link href="/" className="flex items-center gap-3 rounded-lg bg-primary/10 px-3 py-2 text-primary transition-all hover:bg-primary/20">
-          <LayoutDashboard size={20} />
-          <span className="font-medium">Resumen</span>
-        </Link>
-        <Link href="/ingresos" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-secondary hover:text-foreground">
-          <FileText size={20} />
-          <span className="font-medium">Ingresos</span>
-        </Link>
-        <Link href="/compras" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-secondary hover:text-foreground">
-          <ShoppingCart size={20} />
-          <span className="font-medium">Compras</span>
-        </Link>
-        <Link href="/cuentas" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-secondary hover:text-foreground">
-          <FileText size={20} />
-          <span className="font-medium">Cuentas por Cobrar</span>
-        </Link>
-        <Link href="/gastos" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-secondary hover:text-foreground">
-          <DollarSign size={20} />
-          <span className="font-medium">Gastos</span>
-        </Link>
-        <Link href="/caja" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-secondary hover:text-foreground">
-          <Settings size={20} />
-          <span className="font-medium">Caja & Bancos</span>
-        </Link>
+        {navItems.map((item) => {
+          const isActive = pathname === item.href;
+          return (
+            <Link 
+              key={item.href} 
+              href={item.href} 
+              className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-all ${
+                isActive 
+                  ? "bg-primary/10 text-primary hover:bg-primary/20" 
+                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+              }`}
+            >
+              <item.icon size={20} />
+              <span className="font-medium">{item.label}</span>
+            </Link>
+          );
+        })}
       </nav>
       <div className="p-4 border-t border-border">
         <button className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-destructive/10 hover:text-destructive">
