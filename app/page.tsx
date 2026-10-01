@@ -9,7 +9,12 @@ export default function Home() {
   const [dashboardData, setDashboardData] = useState<any>(null);
 
   useEffect(() => {
-    fetch('/api/dashboard')
+    // Por defecto, cargar datos del mes actual
+    const hoy = new Date();
+    const primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().split('T')[0];
+    const ultimoDia = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).toISOString().split('T')[0];
+    
+    fetch(`/api/dashboard?inicio=${primerDia}&fin=${ultimoDia}`)
       .then(res => {
         if (!res.ok) throw new Error('Error al cargar datos');
         return res.json();
