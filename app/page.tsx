@@ -10,13 +10,32 @@ export default function Home() {
 
   useEffect(() => {
     fetch('/api/dashboard')
-      .then(res => res.json())
-      .then(data => setDashboardData(data))
-      .catch(console.error);
+      .then(res => {
+        if (!res.ok) throw new Error('Error al cargar datos');
+        return res.json();
+      })
+      .then(data => {
+        if (data.error) throw new Error(data.error);
+        setDashboardData(data);
+      })
+      .catch(err => {
+        console.error(err);
+        setDashboardData({ error: true });
+      });
   }, []);
 
   if (!dashboardData) {
     return <div className="flex h-[50vh] items-center justify-center">Cargando métricas...</div>;
+  }
+
+  if (dashboardData.error) {
+    return (
+      <div className="flex h-[50vh] flex-col items-center justify-center text-center space-y-4">
+        <div className="text-destructive font-bold text-xl">Error al cargar datos</div>
+        <p className="text-muted-foreground">Ocurrió un error al conectar con Odoo o la base de datos.</p>
+        <p className="text-sm">Verifica las variables de entorno ODOO_URL, ODOO_DB, etc.</p>
+      </div>
+    );
   }
 
 const container = {
