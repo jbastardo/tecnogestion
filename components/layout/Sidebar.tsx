@@ -34,7 +34,7 @@ export default function Sidebar() {
         </Link>
         <Link href="/caja" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-secondary hover:text-foreground">
           <Settings size={20} />
-          <span className="font-medium">Caja Admin</span>
+          <span className="font-medium">Caja & Bancos</span>
         </Link>
       </nav>
       <div className="p-4 border-t border-border">

@@ -25,19 +25,59 @@ export async function GET(req: Request) {
     const posOrders = await odoo.searchRead(
       'pos.order',
       domain,
-      ['name', 'date_order', 'amount_total', 'amount_tax', 'session_id', 'is_invoiced', 'igtf_amount', 'mf_invoice_number', 'mf_reportz']
+      ['name', 'date_order', 'amount_total', 'amount_tax', 'session_id', 'is_invoiced', 'igtf_amount', 'mf_invoice_number', 'mf_reportz', 'payment_ids', 'amount_paid']
     );
 
-    // Mapeo simple a la estructura que espera la UI (simulando los datos de la vieja BD)
+    // Recolectar todos los IDs de pago
+    const allPaymentIds = posOrders.reduce((acc: number[], order: any) => {
+      if (order.payment_ids && Array.isArray(order.payment_ids)) {
+        return acc.concat(order.payment_ids);
+      }
+      return acc;
+    }, []);
+
+    let allPayments: any[] = [];
+    if (allPaymentIds.length > 0) {
+      allPayments = await odoo.searchRead(
+        'pos.payment',
+        [['id', 'in', allPaymentIds]],
+        ['payment_method_id', 'amount', 'pos_order_id']
+      );
+    }
+
     const formattedIngresos = posOrders.map((order: any) => {
-      const esFiscal = order.is_invoiced || order.mf_invoice_number;
+      // CAJA-* orders are POS receipts (Nota de Entrega). Fiscal invoices have mf_invoice_number.
+      const esFiscal = !!order.mf_invoice_number || (order.is_invoiced && !String(order.name).startsWith('CAJA-'));
       
-      const pagadoTotal = order.amount_paid || order.amount_total; // En POS de Odoo generalmente se paga completo, simulamos si falta.
+      const pagadoTotal = order.amount_paid || order.amount_total;
       const cxc = order.amount_total - pagadoTotal;
+
+      // Filtrar pagos para esta orden
+      const orderPayments = allPayments.filter(p => p.pos_order_id && p.pos_order_id[0] === order.id);
+      
+      let pagadoUSD = 0;
+      let pagadoBs = 0; // Este es un estimado basado en la asunción de que el amount de Odoo está en moneda base. Si la moneda base es USD, el 'amount' del pago está en USD. Si el usuario requiere el valor en Bs exacto, se necesita la tasa.
+      
+      const desglosePagos = orderPayments.map(p => {
+        const methodName = (p.payment_method_id && p.payment_method_id[1]) ? p.payment_method_id[1].toLowerCase() : '';
+        const isBs = methodName.includes('bs') || methodName.includes('bolivar') || methodName.includes('pago movil') || methodName.includes('punto') || methodName.includes('transferencia');
+        
+        if (isBs) {
+          pagadoBs += p.amount; // Nota: si 'amount' viene en USD, hay que mostrarlo como "USD pagados en Bs" o multiplicarlo por la tasa. Asumiremos por ahora que lo separamos según el método.
+        } else {
+          pagadoUSD += p.amount;
+        }
+
+        return {
+          metodo: p.payment_method_id ? p.payment_method_id[1] : 'Desconocido',
+          monto: p.amount,
+          esBs: isBs
+        };
+      });
 
       return {
         id: order.id.toString(),
-        fecha: order.date_order.split(' ')[0], // Solo la fecha
+        fecha: order.date_order.split(' ')[0], 
         tipoOperacion: esFiscal ? 'Factura' : 'Nota de Entrega',
         referencia: order.mf_invoice_number || order.name || "N/A",
         totalOperacion: order.amount_total || 0,
@@ -45,6 +85,9 @@ export async function GET(req: Request) {
         impuestos: esFiscal ? order.amount_tax + (order.igtf_amount || 0) : 0,
         pagadoTotal: pagadoTotal,
         cxc: cxc > 0 ? cxc : 0,
+        pagos: desglosePagos,
+        pagadoUSD,
+        pagadoBs // En la misma moneda base (probablemente USD)
       };
     });
 

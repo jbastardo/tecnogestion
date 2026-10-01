@@ -9,7 +9,7 @@ export default function IngresosPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>({ key: 'fecha', direction: 'desc' });
 
   // Obtener fecha actual en zona horaria de Caracas (UTC-4)
   const getCaracasDate = () => {
@@ -60,19 +60,37 @@ export default function IngresosPage() {
     return symbol + new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(val) || 0);
   };
 
-  const toggleSort = () => {
-    setSortOrder(prev => prev === "desc" ? "asc" : "desc");
+  const handleSort = (key: string) => {
+    let direction: "asc" | "desc" = "asc";
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
+    setSortConfig({ key, direction });
   };
 
   let filteredIngresos = ingresos.filter(ingreso => 
-    String(ingreso.fecha || "").toLowerCase().includes(searchTerm.toLowerCase())
+    String(ingreso.fecha || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    String(ingreso.referencia || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    String(ingreso.tipoOperacion || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  filteredIngresos = filteredIngresos.sort((a, b) => {
-    const dateA = new Date(a.fecha).getTime();
-    const dateB = new Date(b.fecha).getTime();
-    return sortOrder === "desc" ? dateB - dateA : dateA - dateB;
-  });
+  if (sortConfig !== null) {
+    filteredIngresos.sort((a, b) => {
+      let aValue = a[sortConfig.key];
+      let bValue = b[sortConfig.key];
+
+      if (typeof aValue === 'string') aValue = aValue.toLowerCase();
+      if (typeof bValue === 'string') bValue = bValue.toLowerCase();
+
+      if (aValue < bValue) {
+        return sortConfig.direction === "asc" ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return sortConfig.direction === "asc" ? 1 : -1;
+      }
+      return 0;
+    });
+  }
 
   return (
     <div className="space-y-6">
@@ -132,30 +150,68 @@ export default function IngresosPage() {
             <thead className="text-xs text-muted-foreground bg-muted/50 uppercase border-b border-border">
               <tr>
                 <th className="px-4 py-3 font-medium">
-                  <button onClick={toggleSort} className="flex items-center gap-1 hover:text-foreground transition-colors">
-                    Fecha <ArrowUpDown size={14} />
+                  <button onClick={() => handleSort('fecha')} className="flex items-center gap-1 hover:text-foreground transition-colors w-full">
+                    Fecha <ArrowUpDown size={14} className={sortConfig?.key === 'fecha' ? 'text-primary' : 'opacity-50'} />
                   </button>
                 </th>
-                <th className="px-4 py-3 font-medium text-left">Operación</th>
-                <th className="px-4 py-3 font-medium text-left">Referencia</th>
-                <th className="px-4 py-3 font-medium text-right">Total Operación</th>
-                <th className="px-4 py-3 font-medium text-right text-emerald-500">Ingreso Neto (Base)</th>
-                <th className="px-4 py-3 font-medium text-right text-amber-500">Impuestos</th>
-                <th className="px-4 py-3 font-medium text-right">Pagado (Total)</th>
-                <th className="px-4 py-3 font-medium text-right text-red-400">Por Cobrar (CxC)</th>
+                <th className="px-4 py-3 font-medium text-left">
+                  <button onClick={() => handleSort('tipoOperacion')} className="flex items-center gap-1 hover:text-foreground transition-colors w-full">
+                    Operación <ArrowUpDown size={14} className={sortConfig?.key === 'tipoOperacion' ? 'text-primary' : 'opacity-50'} />
+                  </button>
+                </th>
+                <th className="px-4 py-3 font-medium text-left">
+                  <button onClick={() => handleSort('referencia')} className="flex items-center gap-1 hover:text-foreground transition-colors w-full">
+                    Referencia <ArrowUpDown size={14} className={sortConfig?.key === 'referencia' ? 'text-primary' : 'opacity-50'} />
+                  </button>
+                </th>
+                <th className="px-4 py-3 font-medium text-right">
+                  <button onClick={() => handleSort('totalOperacion')} className="flex items-center justify-end gap-1 hover:text-foreground transition-colors w-full">
+                    Total Operación <ArrowUpDown size={14} className={sortConfig?.key === 'totalOperacion' ? 'text-primary' : 'opacity-50'} />
+                  </button>
+                </th>
+                <th className="px-4 py-3 font-medium text-right text-emerald-500">
+                  <button onClick={() => handleSort('baseImponible')} className="flex items-center justify-end gap-1 hover:text-foreground transition-colors w-full">
+                    Ingreso Neto (Base) <ArrowUpDown size={14} className={sortConfig?.key === 'baseImponible' ? 'text-primary' : 'opacity-50'} />
+                  </button>
+                </th>
+                <th className="px-4 py-3 font-medium text-right text-amber-500">
+                  <button onClick={() => handleSort('impuestos')} className="flex items-center justify-end gap-1 hover:text-foreground transition-colors w-full">
+                    Impuestos <ArrowUpDown size={14} className={sortConfig?.key === 'impuestos' ? 'text-primary' : 'opacity-50'} />
+                  </button>
+                </th>
+                <th className="px-4 py-3 font-medium text-right">
+                  <button onClick={() => handleSort('pagadoTotal')} className="flex items-center justify-end gap-1 hover:text-foreground transition-colors w-full">
+                    Pagado Total <ArrowUpDown size={14} className={sortConfig?.key === 'pagadoTotal' ? 'text-primary' : 'opacity-50'} />
+                  </button>
+                </th>
+                <th className="px-4 py-3 font-medium text-right text-indigo-400">
+                  <button onClick={() => handleSort('pagadoUSD')} className="flex items-center justify-end gap-1 hover:text-foreground transition-colors w-full">
+                    Pagos USD <ArrowUpDown size={14} className={sortConfig?.key === 'pagadoUSD' ? 'text-primary' : 'opacity-50'} />
+                  </button>
+                </th>
+                <th className="px-4 py-3 font-medium text-right text-blue-400">
+                  <button onClick={() => handleSort('pagadoBs')} className="flex items-center justify-end gap-1 hover:text-foreground transition-colors w-full">
+                    Pagos Bs (Eq. USD) <ArrowUpDown size={14} className={sortConfig?.key === 'pagadoBs' ? 'text-primary' : 'opacity-50'} />
+                  </button>
+                </th>
+                <th className="px-4 py-3 font-medium text-right text-red-400">
+                  <button onClick={() => handleSort('cxc')} className="flex items-center justify-end gap-1 hover:text-foreground transition-colors w-full">
+                    Por Cobrar (CxC) <ArrowUpDown size={14} className={sortConfig?.key === 'cxc' ? 'text-primary' : 'opacity-50'} />
+                  </button>
+                </th>
                 <th className="px-4 py-3 font-medium text-center">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={11} className="px-4 py-8 text-center text-muted-foreground">
                     Cargando registros...
                   </td>
                 </tr>
               ) : filteredIngresos.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={11} className="px-4 py-8 text-center text-muted-foreground">
                     No hay registros encontrados.
                   </td>
                 </tr>
@@ -173,6 +229,23 @@ export default function IngresosPage() {
                     <td className="px-4 py-3 text-right text-emerald-400">{formatCurrency(ingreso.baseImponible, true)}</td>
                     <td className="px-4 py-3 text-right text-amber-400">{formatCurrency(ingreso.impuestos, true)}</td>
                     <td className="px-4 py-3 text-right text-emerald-600">{formatCurrency(ingreso.pagadoTotal, true)}</td>
+                    <td className="px-4 py-3 text-right text-indigo-400">
+                      {formatCurrency(ingreso.pagadoUSD, true)}
+                    </td>
+                    <td className="px-4 py-3 text-right text-blue-400 group relative">
+                      {formatCurrency(ingreso.pagadoBs, true)}
+                      {ingreso.pagos && ingreso.pagos.length > 0 && (
+                        <div className="absolute hidden group-hover:block bg-popover text-popover-foreground p-2 rounded shadow-lg text-xs z-10 w-48 right-0 border border-border">
+                          <div className="font-semibold mb-1 border-b border-border pb-1">Métodos de Pago</div>
+                          {ingreso.pagos.map((p: any, i: number) => (
+                            <div key={i} className="flex justify-between py-0.5">
+                              <span className="truncate mr-2 text-muted-foreground">{p.metodo}</span>
+                              <span className="font-medium">{formatCurrency(p.monto, true)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-right text-red-400">{formatCurrency(ingreso.cxc, true)}</td>
                     <td className="px-4 py-3 text-center">
                       <button onClick={() => handleDelete(ingreso.id)} className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors" title="Eliminar Ingreso">

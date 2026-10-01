@@ -1,0 +1,31 @@
+model MovimientoCaja {
+  id          String   @id @default(cuid())
+  cajaId      String   // "boveda" o "caja_chica"
+  tipo        String   // "INGRESO" o "EGRESO"
+  concepto    String
+  montoUsd    Float    @default(0)
+  montoBs     Float    @default(0)
+  tasaCambio  Float    @default(1)
+  fecha       DateTime @default(now())
+  usuarioId   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AperturaCierreCaja {
+  id               String   @id @default(cuid())
+  cajaId           String   // "boveda" o "caja_chica"
+  fechaApertura    DateTime @default(now())
+  saldoAperturaUsd Float    @default(0)
+  saldoAperturaBs  Float    @default(0)
+  fechaCierre      DateTime?
+  saldoFisicoUsd   Float?   // Lo que el cajero contó realmente
+  saldoFisicoBs    Float?   // Lo que el cajero contó realmente
+  saldoSistemaUsd  Float?   // Lo que el sistema dice que debería haber
+  saldoSistemaBs   Float?   // Lo que el sistema dice que debería haber
+  estado           String   @default("ABIERTA") // ABIERTA o CERRADA
+  usuarioId        String?
+  observaciones    String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}

@@ -13,25 +13,40 @@ export async function GET(req: Request) {
       password: process.env.ODOO_PASSWORD || '47028d0d8c58c126b1e9276bec43158fc0c7ee41',
     });
 
+    const { searchParams } = new URL(req.url);
+    const fechaInicio = searchParams.get('inicio') || new Date().toISOString().split('T')[0];
+    const fechaFin = searchParams.get('fin') || new Date().toISOString().split('T')[0];
+
     const compras = await odoo.searchRead(
       'account.move',
-      [['move_type', 'in', ['in_invoice', 'in_receipt']], ['state', '=', 'posted']],
-      ['name', 'invoice_date', 'partner_id', 'amount_untaxed', 'amount_tax', 'amount_total', 'payment_state'],
+      [
+        ['move_type', 'in', ['in_invoice', 'in_receipt']], 
+        ['state', '=', 'posted'],
+        ['invoice_date', '>=', fechaInicio],
+        ['invoice_date', '<=', fechaFin]
+      ],
+      ['name', 'invoice_date', 'partner_id', 'amount_untaxed', 'amount_tax', 'amount_total', 'payment_state', 'move_type', 'amount_residual'],
       0, 100 // Límite de 100 para no saturar
     );
 
     const formattedCompras = compras.map((compra: any) => {
+      const esFiscal = compra.move_type === 'in_invoice';
+      const cxc = compra.amount_residual || 0; // Amount still owed (CxP in this case, but we'll map to it)
+      const pagadoTotal = compra.amount_total - cxc;
+
       return {
         id: compra.id.toString(),
         fecha: compra.invoice_date || "S/F",
         proveedor: Array.isArray(compra.partner_id) ? compra.partner_id[1] : "Desconocido",
-        notaEntrega: compra.name || "N/A",
+        tipoOperacion: esFiscal ? "Factura" : "Nota de Entrega",
+        referencia: compra.name || "N/A",
         exento: 0, // Simplificación
         baseImponible: compra.amount_untaxed || 0,
-        iva: compra.amount_tax || 0,
-        totalPagar: compra.amount_total || 0,
+        impuestos: compra.amount_tax || 0,
+        totalOperacion: compra.amount_total || 0,
+        pagadoTotal: pagadoTotal,
+        cxp: cxc,
         estadoPago: compra.payment_state === "paid" ? "Pagado" : "Pendiente",
-        metodoPago: "N/A"
       }
     });
 
