@@ -9,6 +9,9 @@ export default function ComprasPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>({ key: 'fecha', direction: 'desc' });
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 50;
 
   const getCaracasDate = () => {
     const date = new Date();
@@ -57,10 +60,51 @@ export default function ComprasPage() {
     }
   };
 
-  const filteredCompras = compras.filter(compra => 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, fechaInicio, fechaFin]);
+
+  const handleSort = (key: string) => {
+    let direction: "asc" | "desc" = "asc";
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
+    setSortConfig({ key, direction });
+  };
+
+  let filteredCompras = compras.filter(compra => 
     (compra.proveedor?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-    (compra.estadoPago?.toLowerCase() || "").includes(searchTerm.toLowerCase())
+    (compra.estadoPago?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+    (compra.referencia?.toLowerCase() || "").includes(searchTerm.toLowerCase())
   );
+
+  const totales = filteredCompras.reduce((acc, curr) => ({
+    totalOperacion: acc.totalOperacion + (curr.totalOperacion || 0),
+    baseImponible: acc.baseImponible + (curr.baseImponible || 0),
+    impuestos: acc.impuestos + (curr.impuestos || 0),
+    pagadoTotal: acc.pagadoTotal + (curr.pagadoTotal || 0),
+    cxp: acc.cxp + (curr.cxp || 0),
+  }), {
+    totalOperacion: 0, baseImponible: 0, impuestos: 0, pagadoTotal: 0, cxp: 0
+  });
+
+  if (sortConfig !== null) {
+    filteredCompras.sort((a, b) => {
+      let aValue = a[sortConfig.key];
+      let bValue = b[sortConfig.key];
+
+      if (typeof aValue === 'string') aValue = aValue.toLowerCase();
+      if (typeof bValue === 'string') bValue = bValue.toLowerCase();
+
+      if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
+      if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
+      return 0;
+    });
+  }
+
+  const totalPages = Math.ceil(filteredCompras.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedCompras = filteredCompras.slice(startIndex, startIndex + itemsPerPage);
 
   return (
     <div className="space-y-6">
@@ -124,21 +168,62 @@ export default function ComprasPage() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="text-xs text-muted-foreground bg-muted/50 uppercase border-b border-border">
+        <div className="overflow-x-auto overflow-y-auto max-h-[70vh]">
+          <table className="w-full text-sm text-left relative">
+            <thead className="text-xs text-muted-foreground bg-muted/95 backdrop-blur uppercase border-b border-border sticky top-0 z-10 shadow-sm">
               <tr>
-                <th className="px-4 py-3 font-medium">Fecha</th>
-                <th className="px-4 py-3 font-medium text-left">Proveedor</th>
-                <th className="px-4 py-3 font-medium text-left">Operación</th>
-                <th className="px-4 py-3 font-medium text-left">Referencia</th>
-                <th className="px-4 py-3 font-medium text-right">Total Operación</th>
-                <th className="px-4 py-3 font-medium text-right text-emerald-500">Base Imponible</th>
-                <th className="px-4 py-3 font-medium text-right text-amber-500">Impuestos</th>
-                <th className="px-4 py-3 font-medium text-right">Pagado (Total)</th>
-                <th className="px-4 py-3 font-medium text-right text-red-400">Por Pagar (CxP)</th>
-                <th className="px-4 py-3 font-medium text-center">Estado</th>
-                <th className="px-4 py-3 font-medium"></th>
+                <th className="px-4 py-3 font-medium align-top">
+                  <button onClick={() => handleSort('fecha')} className="flex items-center gap-1 hover:text-foreground transition-colors w-full">
+                    Fecha <ArrowUpDown size={14} className={sortConfig?.key === 'fecha' ? 'text-primary' : 'opacity-50'} />
+                  </button>
+                </th>
+                <th className="px-4 py-3 font-medium text-left align-top">
+                  <button onClick={() => handleSort('proveedor')} className="flex items-center gap-1 hover:text-foreground transition-colors w-full">
+                    Proveedor <ArrowUpDown size={14} className={sortConfig?.key === 'proveedor' ? 'text-primary' : 'opacity-50'} />
+                  </button>
+                </th>
+                <th className="px-4 py-3 font-medium text-left align-top">
+                  <button onClick={() => handleSort('tipoOperacion')} className="flex items-center gap-1 hover:text-foreground transition-colors w-full">
+                    Operación <ArrowUpDown size={14} className={sortConfig?.key === 'tipoOperacion' ? 'text-primary' : 'opacity-50'} />
+                  </button>
+                </th>
+                <th className="px-4 py-3 font-medium text-left align-top">
+                  <button onClick={() => handleSort('referencia')} className="flex items-center gap-1 hover:text-foreground transition-colors w-full">
+                    Referencia <ArrowUpDown size={14} className={sortConfig?.key === 'referencia' ? 'text-primary' : 'opacity-50'} />
+                  </button>
+                </th>
+                <th className="px-4 py-3 font-medium text-right align-top">
+                  <button onClick={() => handleSort('totalOperacion')} className="flex items-center justify-end gap-1 hover:text-foreground transition-colors w-full">
+                    Total Operación <ArrowUpDown size={14} className={sortConfig?.key === 'totalOperacion' ? 'text-primary' : 'opacity-50'} />
+                  </button>
+                  <div className="text-xs font-bold mt-1 text-foreground">{formatCurrency(totales.totalOperacion, true)}</div>
+                </th>
+                <th className="px-4 py-3 font-medium text-right text-emerald-500 align-top">
+                  <button onClick={() => handleSort('baseImponible')} className="flex items-center justify-end gap-1 hover:text-foreground transition-colors w-full">
+                    Base Imponible <ArrowUpDown size={14} className={sortConfig?.key === 'baseImponible' ? 'text-primary' : 'opacity-50'} />
+                  </button>
+                  <div className="text-xs font-bold mt-1">{formatCurrency(totales.baseImponible, true)}</div>
+                </th>
+                <th className="px-4 py-3 font-medium text-right text-amber-500 align-top">
+                  <button onClick={() => handleSort('impuestos')} className="flex items-center justify-end gap-1 hover:text-foreground transition-colors w-full">
+                    Impuestos <ArrowUpDown size={14} className={sortConfig?.key === 'impuestos' ? 'text-primary' : 'opacity-50'} />
+                  </button>
+                  <div className="text-xs font-bold mt-1">{formatCurrency(totales.impuestos, true)}</div>
+                </th>
+                <th className="px-4 py-3 font-medium text-right align-top">
+                  <button onClick={() => handleSort('pagadoTotal')} className="flex items-center justify-end gap-1 hover:text-foreground transition-colors w-full">
+                    Pagado Total <ArrowUpDown size={14} className={sortConfig?.key === 'pagadoTotal' ? 'text-primary' : 'opacity-50'} />
+                  </button>
+                  <div className="text-xs font-bold mt-1 text-emerald-500">{formatCurrency(totales.pagadoTotal, true)}</div>
+                </th>
+                <th className="px-4 py-3 font-medium text-right text-red-400 align-top">
+                  <button onClick={() => handleSort('cxp')} className="flex items-center justify-end gap-1 hover:text-foreground transition-colors w-full">
+                    Por Pagar (CxP) <ArrowUpDown size={14} className={sortConfig?.key === 'cxp' ? 'text-primary' : 'opacity-50'} />
+                  </button>
+                  <div className="text-xs font-bold mt-1">{formatCurrency(totales.cxp, true)}</div>
+                </th>
+                <th className="px-4 py-3 font-medium text-center align-top">Estado</th>
+                <th className="px-4 py-3 font-medium align-top"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -155,7 +240,7 @@ export default function ComprasPage() {
                   </td>
                 </tr>
               ) : (
-                filteredCompras.map((compra) => (
+                paginatedCompras.map((compra) => (
                   <tr key={compra.id} className="hover:bg-muted/50 transition-colors group">
                     <td className="px-4 py-3 font-medium">{compra.fecha || "S/F"}</td>
                     <td className="px-4 py-3 max-w-[200px] truncate">{compra.proveedor}</td>
@@ -192,14 +277,37 @@ export default function ComprasPage() {
                 ))
               )}
             </tbody>
+            <tfoot className="bg-muted/50 font-bold border-t-2 border-border">
+              <tr>
+                <td colSpan={4} className="px-4 py-3 text-right">TOTALES:</td>
+                <td className="px-4 py-3 text-right">{formatCurrency(totales.totalOperacion, true)}</td>
+                <td className="px-4 py-3 text-right text-emerald-400">{formatCurrency(totales.baseImponible, true)}</td>
+                <td className="px-4 py-3 text-right text-amber-400">{formatCurrency(totales.impuestos, true)}</td>
+                <td className="px-4 py-3 text-right text-emerald-600">{formatCurrency(totales.pagadoTotal, true)}</td>
+                <td className="px-4 py-3 text-right text-red-400">{formatCurrency(totales.cxp, true)}</td>
+                <td colSpan={2}></td>
+              </tr>
+            </tfoot>
           </table>
         </div>
         
         <div className="p-4 border-t border-border flex items-center justify-between text-sm text-muted-foreground">
-          <span>Mostrando {filteredCompras.length} registros</span>
+          <span>Mostrando {paginatedCompras.length} de {filteredCompras.length} registros (Página {currentPage} de {totalPages || 1})</span>
           <div className="flex gap-2">
-            <button className="px-3 py-1 rounded border border-border hover:bg-secondary disabled:opacity-50" disabled>Anterior</button>
-            <button className="px-3 py-1 rounded border border-border hover:bg-secondary disabled:opacity-50" disabled>Siguiente</button>
+            <button 
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1 rounded border border-border hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Anterior
+            </button>
+            <button 
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages || totalPages === 0}
+              className="px-3 py-1 rounded border border-border hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Siguiente
+            </button>
           </div>
         </div>
       </div>

@@ -12,6 +12,8 @@ export default function IngresosPage() {
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>({ key: 'fecha', direction: 'desc' });
   const [filtroOperacion, setFiltroOperacion] = useState("Todas");
   const [filtroMoneda, setFiltroMoneda] = useState("Todas");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 50;
 
   // Obtener fecha actual en zona horaria de Caracas (UTC-4)
   const getCaracasDate = () => {
@@ -37,6 +39,10 @@ export default function IngresosPage() {
   useEffect(() => {
     fetchIngresos();
   }, [fechaInicio, fechaFin]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filtroOperacion, filtroMoneda, fechaInicio, fechaFin]);
 
   const handleDelete = async (id: string) => {
     if (!confirm("¿Estás seguro de que deseas eliminar este ingreso?")) return;
@@ -117,6 +123,10 @@ export default function IngresosPage() {
     });
   }
 
+  const totalPages = Math.ceil(filteredIngresos.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedIngresos = filteredIngresos.slice(startIndex, startIndex + itemsPerPage);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -188,76 +198,85 @@ export default function IngresosPage() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="text-xs text-muted-foreground bg-muted/50 uppercase border-b border-border">
+        <div className="overflow-x-auto overflow-y-auto max-h-[70vh]">
+          <table className="w-full text-sm text-left relative">
+            <thead className="text-xs text-muted-foreground bg-muted/95 backdrop-blur uppercase border-b border-border sticky top-0 z-10 shadow-sm">
               <tr>
-                <th className="px-4 py-3 font-medium">
+                <th className="px-4 py-3 font-medium align-top">
                   <button onClick={() => handleSort('fecha')} className="flex items-center gap-1 hover:text-foreground transition-colors w-full">
                     Fecha <ArrowUpDown size={14} className={sortConfig?.key === 'fecha' ? 'text-primary' : 'opacity-50'} />
                   </button>
                 </th>
-                <th className="px-4 py-3 font-medium text-left">
+                <th className="px-4 py-3 font-medium text-left align-top">
                   <button onClick={() => handleSort('tipoOperacion')} className="flex items-center gap-1 hover:text-foreground transition-colors w-full">
                     Operación <ArrowUpDown size={14} className={sortConfig?.key === 'tipoOperacion' ? 'text-primary' : 'opacity-50'} />
                   </button>
                 </th>
-                <th className="px-4 py-3 font-medium text-left">
+                <th className="px-4 py-3 font-medium text-left align-top">
                   <button onClick={() => handleSort('referencia')} className="flex items-center gap-1 hover:text-foreground transition-colors w-full">
                     Referencia <ArrowUpDown size={14} className={sortConfig?.key === 'referencia' ? 'text-primary' : 'opacity-50'} />
                   </button>
                 </th>
-                <th className="px-4 py-3 font-medium text-right">
+                <th className="px-4 py-3 font-medium text-right align-top">
                   <button onClick={() => handleSort('totalOperacion')} className="flex items-center justify-end gap-1 hover:text-foreground transition-colors w-full">
                     Total Operación <ArrowUpDown size={14} className={sortConfig?.key === 'totalOperacion' ? 'text-primary' : 'opacity-50'} />
                   </button>
+                  <div className="text-xs font-bold mt-1 text-foreground">{formatCurrency(totales.totalOperacion, true)}</div>
                 </th>
-                <th className="px-4 py-3 font-medium text-right text-emerald-500">
+                <th className="px-4 py-3 font-medium text-right text-emerald-500 align-top">
                   <button onClick={() => handleSort('baseImponible')} className="flex items-center justify-end gap-1 hover:text-foreground transition-colors w-full">
                     Ingreso Neto (Base) <ArrowUpDown size={14} className={sortConfig?.key === 'baseImponible' ? 'text-primary' : 'opacity-50'} />
                   </button>
+                  <div className="text-xs font-bold mt-1">{formatCurrency(totales.baseImponible, true)}</div>
                 </th>
-                <th className="px-4 py-3 font-medium text-right text-amber-500">
+                <th className="px-4 py-3 font-medium text-right text-amber-500 align-top">
                   <button onClick={() => handleSort('impuestos')} className="flex items-center justify-end gap-1 hover:text-foreground transition-colors w-full">
                     IVA <ArrowUpDown size={14} className={sortConfig?.key === 'impuestos' ? 'text-primary' : 'opacity-50'} />
                   </button>
+                  <div className="text-xs font-bold mt-1">{formatCurrency(totales.impuestos, true)}</div>
                 </th>
-                <th className="px-4 py-3 font-medium text-right text-orange-400">
+                <th className="px-4 py-3 font-medium text-right text-orange-400 align-top">
                   <button onClick={() => handleSort('igtf')} className="flex items-center justify-end gap-1 hover:text-foreground transition-colors w-full">
                     IGTF <ArrowUpDown size={14} className={sortConfig?.key === 'igtf' ? 'text-primary' : 'opacity-50'} />
                   </button>
+                  <div className="text-xs font-bold mt-1">{formatCurrency(totales.igtf, true)}</div>
                 </th>
-                <th className="px-4 py-3 font-medium text-right">
+                <th className="px-4 py-3 font-medium text-right align-top">
                   <button onClick={() => handleSort('pagadoTotal')} className="flex items-center justify-end gap-1 hover:text-foreground transition-colors w-full">
                     Pagado Total <ArrowUpDown size={14} className={sortConfig?.key === 'pagadoTotal' ? 'text-primary' : 'opacity-50'} />
                   </button>
+                  <div className="text-xs font-bold mt-1 text-emerald-500">{formatCurrency(totales.pagadoTotal, true)}</div>
                 </th>
-                <th className="px-4 py-3 font-medium text-right text-indigo-400">
+                <th className="px-4 py-3 font-medium text-right text-indigo-400 align-top">
                   <button onClick={() => handleSort('pagadoUSD')} className="flex items-center justify-end gap-1 hover:text-foreground transition-colors w-full">
                     Pagos USD <ArrowUpDown size={14} className={sortConfig?.key === 'pagadoUSD' ? 'text-primary' : 'opacity-50'} />
                   </button>
+                  <div className="text-xs font-bold mt-1">{formatCurrency(totales.pagadoUSD, true)}</div>
                 </th>
-                <th className="px-4 py-3 font-medium text-right text-muted-foreground">
+                <th className="px-4 py-3 font-medium text-right text-muted-foreground align-top">
                   <button onClick={() => handleSort('tasaAplicada')} className="flex items-center justify-end gap-1 hover:text-foreground transition-colors w-full">
                     Tasa <ArrowUpDown size={14} className={sortConfig?.key === 'tasaAplicada' ? 'text-primary' : 'opacity-50'} />
                   </button>
                 </th>
-                <th className="px-4 py-3 font-medium text-right text-blue-400">
+                <th className="px-4 py-3 font-medium text-right text-blue-400 align-top">
                   <button onClick={() => handleSort('pagadoBsReal')} className="flex items-center justify-end gap-1 hover:text-foreground transition-colors w-full">
                     Pagos Bs <ArrowUpDown size={14} className={sortConfig?.key === 'pagadoBsReal' ? 'text-primary' : 'opacity-50'} />
                   </button>
+                  <div className="text-xs font-bold mt-1">{formatCurrency(totales.pagadoBsReal, false)}</div>
                 </th>
-                <th className="px-4 py-3 font-medium text-right text-purple-400">
+                <th className="px-4 py-3 font-medium text-right text-purple-400 align-top">
                   <button onClick={() => handleSort('pagadoRetencion')} className="flex items-center justify-end gap-1 hover:text-foreground transition-colors w-full">
                     Retenciones <ArrowUpDown size={14} className={sortConfig?.key === 'pagadoRetencion' ? 'text-primary' : 'opacity-50'} />
                   </button>
+                  <div className="text-xs font-bold mt-1">{formatCurrency(totales.pagadoRetencion, true)}</div>
                 </th>
-                <th className="px-4 py-3 font-medium text-right text-red-400">
+                <th className="px-4 py-3 font-medium text-right text-red-400 align-top">
                   <button onClick={() => handleSort('cxc')} className="flex items-center justify-end gap-1 hover:text-foreground transition-colors w-full">
                     Por Cobrar (CxC) <ArrowUpDown size={14} className={sortConfig?.key === 'cxc' ? 'text-primary' : 'opacity-50'} />
                   </button>
+                  <div className="text-xs font-bold mt-1">{formatCurrency(totales.cxc, true)}</div>
                 </th>
-                <th className="px-4 py-3 font-medium text-center">Acciones</th>
+                <th className="px-4 py-3 font-medium text-center align-top">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -274,7 +293,7 @@ export default function IngresosPage() {
                   </td>
                 </tr>
               ) : (
-                filteredIngresos.map((ingreso) => (
+                paginatedIngresos.map((ingreso) => (
                   <tr key={ingreso.id} className="hover:bg-muted/50 transition-colors">
                     <td className="px-4 py-3 font-medium">{ingreso.fecha || "S/F"}</td>
                     <td className="px-4 py-3 text-left">
@@ -339,10 +358,22 @@ export default function IngresosPage() {
         </div>
         
         <div className="p-4 border-t border-border flex items-center justify-between text-sm text-muted-foreground">
-          <span>Mostrando {filteredIngresos.length} registros</span>
+          <span>Mostrando {paginatedIngresos.length} de {filteredIngresos.length} registros (Página {currentPage} de {totalPages || 1})</span>
           <div className="flex gap-2">
-            <button className="px-3 py-1 rounded border border-border hover:bg-secondary disabled:opacity-50" disabled>Anterior</button>
-            <button className="px-3 py-1 rounded border border-border hover:bg-secondary disabled:opacity-50" disabled>Siguiente</button>
+            <button 
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1 rounded border border-border hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Anterior
+            </button>
+            <button 
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages || totalPages === 0}
+              className="px-3 py-1 rounded border border-border hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Siguiente
+            </button>
           </div>
         </div>
       </div>
