@@ -5,6 +5,7 @@ import { Search, Plus, ArrowUpRight, ArrowDownRight, Wallet, History, FileText }
 
 export default function CajaPage() {
   const [activeTab, setActiveTab] = useState<"resumen" | "movimientos" | "cuadres">("resumen");
+  const [cajaActiva, setCajaActiva] = useState<"boveda" | "caja_chica">("boveda");
 
   return (
     <div className="space-y-6">
@@ -14,6 +15,14 @@ export default function CajaPage() {
           <p className="text-muted-foreground">Control de bóveda, efectivo y cuadres de caja diarios</p>
         </div>
         <div className="flex gap-2">
+          <select 
+            value={cajaActiva}
+            onChange={(e) => setCajaActiva(e.target.value as "boveda" | "caja_chica")}
+            className="bg-card border border-border text-sm rounded-lg px-3 py-2 outline-none focus:border-primary font-medium text-foreground"
+          >
+            <option value="boveda">Bóveda Principal (POS)</option>
+            <option value="caja_chica">Caja Chica (Admin)</option>
+          </select>
           <button className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-2">
             <Plus size={16} />
             Nuevo Movimiento
@@ -49,15 +58,31 @@ export default function CajaPage() {
 
       {activeTab === "resumen" && (
         <div className="space-y-6">
+          
+          <div className="flex items-center gap-4 bg-muted/30 border border-border p-4 rounded-xl">
+             <div className="flex-1">
+                <p className="text-sm text-muted-foreground font-medium">Saldo Inicial (Apertura)</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-xl font-bold">{cajaActiva === "boveda" ? "$250.00" : "$50.00"}</span>
+                  {cajaActiva === "boveda" && <span className="text-xs bg-secondary px-2 py-0.5 rounded text-muted-foreground">Odoo POS</span>}
+                </div>
+             </div>
+             {cajaActiva === "caja_chica" && (
+               <button className="text-sm border border-border bg-card hover:bg-secondary px-3 py-1.5 rounded-lg transition-colors font-medium">
+                 Ajustar Apertura
+               </button>
+             )}
+          </div>
+
           <div className="grid gap-4 md:grid-cols-3">
             <div className="rounded-xl border border-border bg-card p-6 shadow-sm flex flex-col justify-between">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-muted-foreground">Efectivo en Bóveda</span>
+                <span className="text-sm font-medium text-muted-foreground">Efectivo Total</span>
                 <Wallet className="h-4 w-4 text-emerald-500" />
               </div>
               <div className="mt-4">
-                <div className="text-3xl font-bold">$8,543.00</div>
-                <p className="text-xs text-muted-foreground mt-1">Saldo actual físico verificado</p>
+                <div className="text-3xl font-bold">{cajaActiva === "boveda" ? "$8,543.00" : "$140.00"}</div>
+                <p className="text-xs text-muted-foreground mt-1">Saldo + Ingresos - Egresos</p>
               </div>
             </div>
             

@@ -30,14 +30,16 @@ export async function GET(req: Request) {
 
     // Mapeo simple a la estructura que espera la UI (simulando los datos de la vieja BD)
     const formattedIngresos = posOrders.map((order: any) => {
+      const esFiscal = order.is_invoiced || order.mf_invoice_number;
+
       return {
         id: order.id.toString(),
         fecha: order.date_order.split(' ')[0], // Solo la fecha
-        baseImponibleZ: order.amount_total - order.amount_tax,
-        ivaZ: order.amount_tax,
-        igtfZ: order.igtf_amount || 0, // Extraído de campos locales del POS
-        notasEntrega: order.mf_invoice_number ? 0 : order.amount_total, // Si tiene número de factura, es fiscal
-        efectivoBs: order.amount_total, // Simulado, se debe sacar de pos.payment
+        baseImponibleZ: esFiscal ? order.amount_total - order.amount_tax : 0,
+        ivaZ: esFiscal ? order.amount_tax : 0,
+        igtfZ: order.igtf_amount || 0,
+        notasEntrega: esFiscal ? 0 : order.amount_total,
+        efectivoBs: order.amount_total, // Simulado, se debe sacar de pos.payment (TODO)
         bancos: 0,
         usd: 0,
         zelle: 0,

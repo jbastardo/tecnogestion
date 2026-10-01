@@ -11,9 +11,19 @@ export default function IngresosPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
+  // Obtener fecha actual en zona horaria de Caracas (UTC-4)
+  const getCaracasDate = () => {
+    const date = new Date();
+    const caracasTime = new Date(date.getTime() + (date.getTimezoneOffset() * 60000) - (4 * 3600000));
+    return caracasTime.toISOString().split('T')[0];
+  };
+
+  const [fechaInicio, setFechaInicio] = useState(getCaracasDate());
+  const [fechaFin, setFechaFin] = useState(getCaracasDate());
+
   const fetchIngresos = () => {
     setLoading(true);
-    fetch('/api/ingresos')
+    fetch(`/api/ingresos?inicio=${fechaInicio}&fin=${fechaFin}`)
       .then(res => res.json())
       .then(data => {
         setIngresos(data.ingresos || []);
@@ -24,7 +34,7 @@ export default function IngresosPage() {
 
   useEffect(() => {
     fetchIngresos();
-  }, []);
+  }, [fechaInicio, fechaFin]);
 
   const handleDelete = async (id: string) => {
     if (!confirm("¿Estás seguro de que deseas eliminar este ingreso?")) return;
@@ -84,16 +94,36 @@ export default function IngresosPage() {
       </div>
 
       <div className="rounded-xl border border-border bg-card shadow-sm">
-        <div className="p-4 border-b border-border flex items-center justify-between">
-          <div className="relative w-72">
+        <div className="p-4 border-b border-border flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="relative w-full md:w-72">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input 
               type="text" 
-              placeholder="Buscar por fecha..." 
+              placeholder="Buscar..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-background border border-border rounded-lg pl-9 pr-4 py-2 text-sm focus:outline-none focus:border-primary"
             />
+          </div>
+          <div className="flex gap-2 items-center">
+            <div className="flex items-center gap-2 bg-background border border-border rounded-lg px-2 py-1">
+              <span className="text-sm text-muted-foreground">Desde:</span>
+              <input 
+                type="date"
+                value={fechaInicio}
+                onChange={(e) => setFechaInicio(e.target.value)}
+                className="bg-transparent border-none text-sm outline-none focus:ring-0 text-foreground"
+              />
+            </div>
+            <div className="flex items-center gap-2 bg-background border border-border rounded-lg px-2 py-1">
+              <span className="text-sm text-muted-foreground">Hasta:</span>
+              <input 
+                type="date"
+                value={fechaFin}
+                onChange={(e) => setFechaFin(e.target.value)}
+                className="bg-transparent border-none text-sm outline-none focus:ring-0 text-foreground"
+              />
+            </div>
           </div>
         </div>
 
