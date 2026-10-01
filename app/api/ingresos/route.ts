@@ -70,7 +70,7 @@ export async function GET(req: Request) {
         
         // 3. Determinar Moneda Base
         let isBs = methodName.includes('bs') || methodName.includes('bolivar') || methodName.includes('pago movil') || methodName.includes('punto') || methodName.includes('transferencia') || methodName.includes('pabilo venezuela') || methodName.includes('megasoft') || methodName.includes('bancamiga');
-        let isUSD = methodName.includes('$') || methodName.includes('zelle') || methodName.includes('binance') || methodName.includes('panama') || methodName.includes('verde') || methodName.includes('pabilo binance');
+        let isUSD = methodName.includes('$') || methodName.includes('zelle') || methodName.includes('binance') || methodName.includes('panama') || methodName.includes('verde') || methodName.includes('pabilo binance') || methodName.includes('saldo a favor');
 
         // Reglas especiales
         if (isCredito) {
