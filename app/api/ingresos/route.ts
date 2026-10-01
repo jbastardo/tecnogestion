@@ -58,29 +58,53 @@ export async function GET(req: Request) {
       let pagadoUSD = 0;
       let pagadoBs = 0; 
       let pagadoCredito = 0; // Se considerará CxC
+      let pagadoRetencion = 0;
       
       const desglosePagos = orderPayments.map(p => {
         const methodName = (p.payment_method_id && p.payment_method_id[1]) ? p.payment_method_id[1].toLowerCase() : '';
-        const isBs = methodName.includes('bs') || methodName.includes('bolivar') || methodName.includes('pago movil') || methodName.includes('punto') || methodName.includes('transferencia');
-        const isCredito = methodName.includes('crédito') || methodName.includes('credito') || methodName.includes('cashea');
         
+        // 1. Es Crédito (CxC)
+        const isCredito = methodName.includes('crédito') || methodName.includes('credito') || methodName.includes('cashea') || methodName.includes('pxc') || methodName.includes('cxc');
+        // 2. Es Retención
+        const isRetencion = methodName.includes('retencion') || methodName.includes('retención');
+        
+        // 3. Determinar Moneda Base
+        let isBs = methodName.includes('bs') || methodName.includes('bolivar') || methodName.includes('pago movil') || methodName.includes('punto') || methodName.includes('transferencia') || methodName.includes('pabilo venezuela') || methodName.includes('megasoft') || methodName.includes('bancamiga');
+        let isUSD = methodName.includes('$') || methodName.includes('zelle') || methodName.includes('binance') || methodName.includes('panama') || methodName.includes('verde') || methodName.includes('pabilo binance');
+
+        // Reglas especiales
         if (isCredito) {
+          isUSD = true; // Por regla de negocio, los créditos se consideran en $
+          isBs = false;
+        }
+
+        // Si no se detectó moneda explícita y no es crédito/retención, asume Bs por defecto
+        if (!isBs && !isUSD && !isRetencion) {
+          isBs = true; 
+        }
+
+        // Sumarizadores
+        if (isRetencion) {
+          pagadoRetencion += p.amount;
+        } else if (isCredito) {
           pagadoCredito += p.amount;
+        } else if (isUSD) {
+          pagadoUSD += p.amount;
         } else if (isBs) {
           pagadoBs += p.amount; 
-        } else {
-          pagadoUSD += p.amount;
         }
 
         return {
           metodo: p.payment_method_id ? p.payment_method_id[1] : 'Desconocido',
           monto: p.amount,
           esBs: isBs,
-          esCredito: isCredito
+          esCredito: isCredito,
+          esRetencion: isRetencion,
+          esUSD: isUSD
         };
       });
 
-      const pagadoTotalEfectivo = pagadoTotal - pagadoCredito;
+      const pagadoTotalEfectivo = pagadoTotal - pagadoCredito - pagadoRetencion;
       const cxcReal = cxc + pagadoCredito;
 
       return {
@@ -90,12 +114,14 @@ export async function GET(req: Request) {
         referencia: order.mf_invoice_number || order.name || "N/A",
         totalOperacion: order.amount_total || 0,
         baseImponible: esFiscal ? order.amount_total - order.amount_tax : order.amount_total,
-        impuestos: esFiscal ? order.amount_tax + (order.igtf_amount || 0) : 0,
+        impuestos: esFiscal ? order.amount_tax : 0,
+        igtf: esFiscal ? (order.igtf_amount || 0) : 0,
         pagadoTotal: pagadoTotalEfectivo,
         cxc: cxcReal > 0 ? cxcReal : 0,
         pagos: desglosePagos,
         pagadoUSD,
-        pagadoBs
+        pagadoBs,
+        pagadoRetencion
       };
     });
 

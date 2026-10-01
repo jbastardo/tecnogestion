@@ -10,6 +10,8 @@ export default function IngresosPage() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>({ key: 'fecha', direction: 'desc' });
+  const [filtroOperacion, setFiltroOperacion] = useState("Todas");
+  const [filtroMoneda, setFiltroMoneda] = useState("Todas");
 
   // Obtener fecha actual en zona horaria de Caracas (UTC-4)
   const getCaracasDate = () => {
@@ -68,11 +70,33 @@ export default function IngresosPage() {
     setSortConfig({ key, direction });
   };
 
-  let filteredIngresos = ingresos.filter(ingreso => 
-    String(ingreso.fecha || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    String(ingreso.referencia || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    String(ingreso.tipoOperacion || "").toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  let filteredIngresos = ingresos.filter(ingreso => {
+    const matchesSearch = String(ingreso.fecha || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          String(ingreso.referencia || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          String(ingreso.tipoOperacion || "").toLowerCase().includes(searchTerm.toLowerCase());
+                          
+    const matchesOperacion = filtroOperacion === "Todas" || ingreso.tipoOperacion === filtroOperacion;
+    
+    let matchesMoneda = true;
+    if (filtroMoneda === "Solo USD") matchesMoneda = ingreso.pagadoUSD > 0;
+    if (filtroMoneda === "Solo Bs") matchesMoneda = ingreso.pagadoBs > 0;
+    
+    return matchesSearch && matchesOperacion && matchesMoneda;
+  });
+
+  const totales = filteredIngresos.reduce((acc, curr) => ({
+    totalOperacion: acc.totalOperacion + (curr.totalOperacion || 0),
+    baseImponible: acc.baseImponible + (curr.baseImponible || 0),
+    impuestos: acc.impuestos + (curr.impuestos || 0),
+    igtf: acc.igtf + (curr.igtf || 0),
+    pagadoTotal: acc.pagadoTotal + (curr.pagadoTotal || 0),
+    pagadoUSD: acc.pagadoUSD + (curr.pagadoUSD || 0),
+    pagadoBs: acc.pagadoBs + (curr.pagadoBs || 0),
+    pagadoRetencion: acc.pagadoRetencion + (curr.pagadoRetencion || 0),
+    cxc: acc.cxc + (curr.cxc || 0),
+  }), {
+    totalOperacion: 0, baseImponible: 0, impuestos: 0, igtf: 0, pagadoTotal: 0, pagadoUSD: 0, pagadoBs: 0, pagadoRetencion: 0, cxc: 0
+  });
 
   if (sortConfig !== null) {
     filteredIngresos.sort((a, b) => {
@@ -123,7 +147,25 @@ export default function IngresosPage() {
               className="w-full bg-background border border-border rounded-lg pl-9 pr-4 py-2 text-sm focus:outline-none focus:border-primary"
             />
           </div>
-          <div className="flex gap-2 items-center">
+          <div className="flex gap-2 items-center flex-wrap">
+            <select
+              value={filtroOperacion}
+              onChange={(e) => setFiltroOperacion(e.target.value)}
+              className="bg-background border border-border rounded-lg px-2 py-2 text-sm focus:outline-none"
+            >
+              <option value="Todas">Todas las Operaciones</option>
+              <option value="Factura">Facturas</option>
+              <option value="Nota de Entrega">Notas de Entrega</option>
+            </select>
+            <select
+              value={filtroMoneda}
+              onChange={(e) => setFiltroMoneda(e.target.value)}
+              className="bg-background border border-border rounded-lg px-2 py-2 text-sm focus:outline-none"
+            >
+              <option value="Todas">Todas las Monedas</option>
+              <option value="Solo USD">Pagos con USD</option>
+              <option value="Solo Bs">Pagos con Bs</option>
+            </select>
             <div className="flex items-center gap-2 bg-background border border-border rounded-lg px-2 py-1">
               <span className="text-sm text-muted-foreground">Desde:</span>
               <input 
@@ -176,7 +218,12 @@ export default function IngresosPage() {
                 </th>
                 <th className="px-4 py-3 font-medium text-right text-amber-500">
                   <button onClick={() => handleSort('impuestos')} className="flex items-center justify-end gap-1 hover:text-foreground transition-colors w-full">
-                    Impuestos <ArrowUpDown size={14} className={sortConfig?.key === 'impuestos' ? 'text-primary' : 'opacity-50'} />
+                    IVA <ArrowUpDown size={14} className={sortConfig?.key === 'impuestos' ? 'text-primary' : 'opacity-50'} />
+                  </button>
+                </th>
+                <th className="px-4 py-3 font-medium text-right text-orange-400">
+                  <button onClick={() => handleSort('igtf')} className="flex items-center justify-end gap-1 hover:text-foreground transition-colors w-full">
+                    IGTF <ArrowUpDown size={14} className={sortConfig?.key === 'igtf' ? 'text-primary' : 'opacity-50'} />
                   </button>
                 </th>
                 <th className="px-4 py-3 font-medium text-right">
@@ -192,6 +239,11 @@ export default function IngresosPage() {
                 <th className="px-4 py-3 font-medium text-right text-blue-400">
                   <button onClick={() => handleSort('pagadoBs')} className="flex items-center justify-end gap-1 hover:text-foreground transition-colors w-full">
                     Pagos Bs (Eq. USD) <ArrowUpDown size={14} className={sortConfig?.key === 'pagadoBs' ? 'text-primary' : 'opacity-50'} />
+                  </button>
+                </th>
+                <th className="px-4 py-3 font-medium text-right text-purple-400">
+                  <button onClick={() => handleSort('pagadoRetencion')} className="flex items-center justify-end gap-1 hover:text-foreground transition-colors w-full">
+                    Retenciones <ArrowUpDown size={14} className={sortConfig?.key === 'pagadoRetencion' ? 'text-primary' : 'opacity-50'} />
                   </button>
                 </th>
                 <th className="px-4 py-3 font-medium text-right text-red-400">
@@ -228,6 +280,7 @@ export default function IngresosPage() {
                     <td className="px-4 py-3 text-right font-semibold">{formatCurrency(ingreso.totalOperacion, true)}</td>
                     <td className="px-4 py-3 text-right text-emerald-400">{formatCurrency(ingreso.baseImponible, true)}</td>
                     <td className="px-4 py-3 text-right text-amber-400">{formatCurrency(ingreso.impuestos, true)}</td>
+                    <td className="px-4 py-3 text-right text-orange-400">{formatCurrency(ingreso.igtf, true)}</td>
                     <td className="px-4 py-3 text-right text-emerald-600">{formatCurrency(ingreso.pagadoTotal, true)}</td>
                     <td className="px-4 py-3 text-right text-indigo-400">
                       {formatCurrency(ingreso.pagadoUSD, true)}
@@ -246,6 +299,7 @@ export default function IngresosPage() {
                         </div>
                       )}
                     </td>
+                    <td className="px-4 py-3 text-right text-purple-400">{formatCurrency(ingreso.pagadoRetencion, true)}</td>
                     <td className="px-4 py-3 text-right text-red-400">{formatCurrency(ingreso.cxc, true)}</td>
                     <td className="px-4 py-3 text-center">
                       <button onClick={() => handleDelete(ingreso.id)} className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors" title="Eliminar Ingreso">
@@ -256,6 +310,21 @@ export default function IngresosPage() {
                 ))
               )}
             </tbody>
+            <tfoot className="bg-muted/50 font-bold border-t-2 border-border">
+              <tr>
+                <td colSpan={3} className="px-4 py-3 text-right">TOTALES:</td>
+                <td className="px-4 py-3 text-right">{formatCurrency(totales.totalOperacion, true)}</td>
+                <td className="px-4 py-3 text-right text-emerald-400">{formatCurrency(totales.baseImponible, true)}</td>
+                <td className="px-4 py-3 text-right text-amber-400">{formatCurrency(totales.impuestos, true)}</td>
+                <td className="px-4 py-3 text-right text-orange-400">{formatCurrency(totales.igtf, true)}</td>
+                <td className="px-4 py-3 text-right text-emerald-600">{formatCurrency(totales.pagadoTotal, true)}</td>
+                <td className="px-4 py-3 text-right text-indigo-400">{formatCurrency(totales.pagadoUSD, true)}</td>
+                <td className="px-4 py-3 text-right text-blue-400">{formatCurrency(totales.pagadoBs, true)}</td>
+                <td className="px-4 py-3 text-right text-purple-400">{formatCurrency(totales.pagadoRetencion, true)}</td>
+                <td className="px-4 py-3 text-right text-red-400">{formatCurrency(totales.cxc, true)}</td>
+                <td></td>
+              </tr>
+            </tfoot>
           </table>
         </div>
         
