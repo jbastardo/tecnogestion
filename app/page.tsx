@@ -7,16 +7,21 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 
 export default function Home() {
   const [dashboardData, setDashboardData] = useState<any>(null);
-  const [selectedMonth, setSelectedMonth] = useState("2026-07"); // Julio 2026 por defecto para ver datos
+  
+  // Obtener fecha actual en zona horaria de Caracas (UTC-4)
+  const getCaracasDate = () => {
+    const date = new Date();
+    const caracasTime = new Date(date.getTime() + (date.getTimezoneOffset() * 60000) - (4 * 3600000));
+    return caracasTime.toISOString().split('T')[0];
+  };
+
+  const [fechaInicio, setFechaInicio] = useState(getCaracasDate());
+  const [fechaFin, setFechaFin] = useState(getCaracasDate());
 
   useEffect(() => {
-    const [year, month] = selectedMonth.split('-');
-    const primerDia = new Date(Number(year), Number(month) - 1, 1).toISOString().split('T')[0];
-    const ultimoDia = new Date(Number(year), Number(month), 0).toISOString().split('T')[0];
-    
     setDashboardData(null); // Mostrar loading
 
-    fetch(`/api/dashboard?inicio=${primerDia}&fin=${ultimoDia}`)
+    fetch(`/api/dashboard?inicio=${fechaInicio}&fin=${fechaFin}`)
       .then(res => {
         if (!res.ok) throw new Error('Error al cargar datos');
         return res.json();
@@ -29,7 +34,7 @@ export default function Home() {
         console.error(err);
         setDashboardData({ error: true });
       });
-  }, [selectedMonth]);
+  }, [fechaInicio, fechaFin]);
 
   if (!dashboardData) {
     return <div className="flex h-[50vh] items-center justify-center">Cargando métricas...</div>;
@@ -67,18 +72,25 @@ const item = {
           <h2 className="text-2xl font-bold tracking-tight">Resumen Financiero</h2>
           <p className="text-muted-foreground">Visión general del estado administrativo</p>
         </div>
-        <div className="flex gap-2">
-          <select 
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
-            className="bg-card border border-border text-sm rounded-lg px-3 py-2 outline-none focus:border-primary"
-          >
-            <option value="2026-10">Octubre 2026</option>
-            <option value="2026-09">Septiembre 2026</option>
-            <option value="2026-08">Agosto 2026</option>
-            <option value="2026-07">Julio 2026</option>
-            <option value="2026-06">Junio 2026</option>
-          </select>
+        <div className="flex gap-2 items-center">
+          <div className="flex items-center gap-2 bg-card border border-border rounded-lg px-2 py-1">
+            <span className="text-sm text-muted-foreground">Desde:</span>
+            <input 
+              type="date"
+              value={fechaInicio}
+              onChange={(e) => setFechaInicio(e.target.value)}
+              className="bg-transparent border-none text-sm outline-none focus:ring-0 text-foreground"
+            />
+          </div>
+          <div className="flex items-center gap-2 bg-card border border-border rounded-lg px-2 py-1">
+            <span className="text-sm text-muted-foreground">Hasta:</span>
+            <input 
+              type="date"
+              value={fechaFin}
+              onChange={(e) => setFechaFin(e.target.value)}
+              className="bg-transparent border-none text-sm outline-none focus:ring-0 text-foreground"
+            />
+          </div>
           <button className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
             Descargar Reporte
           </button>
