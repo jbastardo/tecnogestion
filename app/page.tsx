@@ -7,13 +7,15 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 
 export default function Home() {
   const [dashboardData, setDashboardData] = useState<any>(null);
+  const [selectedMonth, setSelectedMonth] = useState("2026-07"); // Julio 2026 por defecto para ver datos
 
   useEffect(() => {
-    // Por defecto, cargar datos del mes actual
-    const hoy = new Date();
-    const primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().split('T')[0];
-    const ultimoDia = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).toISOString().split('T')[0];
+    const [year, month] = selectedMonth.split('-');
+    const primerDia = new Date(Number(year), Number(month) - 1, 1).toISOString().split('T')[0];
+    const ultimoDia = new Date(Number(year), Number(month), 0).toISOString().split('T')[0];
     
+    setDashboardData(null); // Mostrar loading
+
     fetch(`/api/dashboard?inicio=${primerDia}&fin=${ultimoDia}`)
       .then(res => {
         if (!res.ok) throw new Error('Error al cargar datos');
@@ -27,7 +29,7 @@ export default function Home() {
         console.error(err);
         setDashboardData({ error: true });
       });
-  }, []);
+  }, [selectedMonth]);
 
   if (!dashboardData) {
     return <div className="flex h-[50vh] items-center justify-center">Cargando métricas...</div>;
@@ -63,12 +65,19 @@ const item = {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Resumen Financiero</h2>
-          <p className="text-muted-foreground">Visión general del estado administrativo (Julio 2026)</p>
+          <p className="text-muted-foreground">Visión general del estado administrativo</p>
         </div>
         <div className="flex gap-2">
-          <select className="bg-card border border-border text-sm rounded-lg px-3 py-2 outline-none focus:border-primary">
-            <option>Julio 2026</option>
-            <option>Junio 2026</option>
+          <select 
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            className="bg-card border border-border text-sm rounded-lg px-3 py-2 outline-none focus:border-primary"
+          >
+            <option value="2026-10">Octubre 2026</option>
+            <option value="2026-09">Septiembre 2026</option>
+            <option value="2026-08">Agosto 2026</option>
+            <option value="2026-07">Julio 2026</option>
+            <option value="2026-06">Junio 2026</option>
           </select>
           <button className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
             Descargar Reporte
