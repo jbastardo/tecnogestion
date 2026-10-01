@@ -56,14 +56,18 @@ export async function GET(req: Request) {
       const orderPayments = allPayments.filter(p => p.pos_order_id && p.pos_order_id[0] === order.id);
       
       let pagadoUSD = 0;
-      let pagadoBs = 0; // Este es un estimado basado en la asunción de que el amount de Odoo está en moneda base. Si la moneda base es USD, el 'amount' del pago está en USD. Si el usuario requiere el valor en Bs exacto, se necesita la tasa.
+      let pagadoBs = 0; 
+      let pagadoCredito = 0; // Se considerará CxC
       
       const desglosePagos = orderPayments.map(p => {
         const methodName = (p.payment_method_id && p.payment_method_id[1]) ? p.payment_method_id[1].toLowerCase() : '';
         const isBs = methodName.includes('bs') || methodName.includes('bolivar') || methodName.includes('pago movil') || methodName.includes('punto') || methodName.includes('transferencia');
+        const isCredito = methodName.includes('crédito') || methodName.includes('credito') || methodName.includes('cashea');
         
-        if (isBs) {
-          pagadoBs += p.amount; // Nota: si 'amount' viene en USD, hay que mostrarlo como "USD pagados en Bs" o multiplicarlo por la tasa. Asumiremos por ahora que lo separamos según el método.
+        if (isCredito) {
+          pagadoCredito += p.amount;
+        } else if (isBs) {
+          pagadoBs += p.amount; 
         } else {
           pagadoUSD += p.amount;
         }
@@ -71,9 +75,13 @@ export async function GET(req: Request) {
         return {
           metodo: p.payment_method_id ? p.payment_method_id[1] : 'Desconocido',
           monto: p.amount,
-          esBs: isBs
+          esBs: isBs,
+          esCredito: isCredito
         };
       });
+
+      const pagadoTotalEfectivo = pagadoTotal - pagadoCredito;
+      const cxcReal = cxc + pagadoCredito;
 
       return {
         id: order.id.toString(),
@@ -83,11 +91,11 @@ export async function GET(req: Request) {
         totalOperacion: order.amount_total || 0,
         baseImponible: esFiscal ? order.amount_total - order.amount_tax : order.amount_total,
         impuestos: esFiscal ? order.amount_tax + (order.igtf_amount || 0) : 0,
-        pagadoTotal: pagadoTotal,
-        cxc: cxc > 0 ? cxc : 0,
+        pagadoTotal: pagadoTotalEfectivo,
+        cxc: cxcReal > 0 ? cxcReal : 0,
         pagos: desglosePagos,
         pagadoUSD,
-        pagadoBs // En la misma moneda base (probablemente USD)
+        pagadoBs
       };
     });
 
