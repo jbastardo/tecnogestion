@@ -33,6 +33,8 @@ export async function GET(req: Request) {
       fecha: gasto.fecha.toISOString().split('T')[0],
       concepto: gasto.concepto,
       tipoGasto: gasto.categoria?.nombre || "General",
+      tipoOperacion: "Recibo Interno",
+      moneda: "USD",
       notaEntrega: gasto.notaEntrega || "",
       exento: gasto.exento,
       baseImponible: gasto.baseImponible,
@@ -63,7 +65,7 @@ export async function GET(req: Request) {
         ['invoice_date', '>=', fechaInicio],
         ['invoice_date', '<=', fechaFin]
       ],
-      ['name', 'invoice_date', 'partner_id', 'amount_untaxed', 'amount_tax', 'amount_total', 'payment_state', 'move_type', 'amount_residual', 'invoice_line_ids'],
+      ['name', 'invoice_date', 'partner_id', 'amount_untaxed', 'amount_tax', 'amount_total', 'payment_state', 'move_type', 'amount_residual', 'invoice_line_ids', 'currency_id', 'journal_id'],
       0, 200
     );
 
@@ -85,7 +87,11 @@ export async function GET(req: Request) {
     const odooGastos: any[] = [];
 
     for (const compra of moves) {
-      const esFiscal = compra.move_type === 'in_invoice';
+      const journalName = (compra.journal_id && compra.journal_id[1]) ? compra.journal_id[1].toLowerCase() : "";
+      const isFactura = journalName.includes("factura");
+      const tipoOperacion = isFactura ? "Factura" : "Nota de Entrega";
+      const moneda = (compra.currency_id && compra.currency_id[1]) ? compra.currency_id[1] : "USD";
+
       let isGasto = false;
       let hasCompraMercancia = false;
       let baseImponibleGasto = 0;
@@ -123,6 +129,8 @@ export async function GET(req: Request) {
         fecha: compra.invoice_date || "S/F",
         concepto: compra.name || "Gasto Odoo",
         tipoGasto: "Operativo",
+        tipoOperacion: tipoOperacion,
+        moneda: moneda,
         notaEntrega: "",
         exento: 0,
         baseImponible: baseImponibleGasto, // Solo la suma de líneas 6 y 7

@@ -25,7 +25,7 @@ export async function GET(req: Request) {
         ['invoice_date', '>=', fechaInicio],
         ['invoice_date', '<=', fechaFin]
       ],
-      ['name', 'invoice_date', 'partner_id', 'amount_untaxed', 'amount_tax', 'amount_total', 'payment_state', 'move_type', 'amount_residual', 'invoice_line_ids'],
+      ['name', 'invoice_date', 'partner_id', 'amount_untaxed', 'amount_tax', 'amount_total', 'payment_state', 'move_type', 'amount_residual', 'invoice_line_ids', 'currency_id', 'journal_id'],
       0, 200 // Límite de 200
     );
 
@@ -48,7 +48,11 @@ export async function GET(req: Request) {
     const formattedCompras: any[] = [];
 
     for (const compra of moves) {
-      const esFiscal = compra.move_type === 'in_invoice';
+      // Determinar si es factura o nota basado en el diario
+      const journalName = (compra.journal_id && compra.journal_id[1]) ? compra.journal_id[1].toLowerCase() : "";
+      const isFactura = journalName.includes("factura");
+      const tipoOperacion = isFactura ? "Factura" : "Nota de Entrega";
+      const moneda = (compra.currency_id && compra.currency_id[1]) ? compra.currency_id[1] : "USD";
       
       let isGasto = false;
       let hasCompraMercancia = false;
@@ -91,7 +95,8 @@ export async function GET(req: Request) {
         id: compra.id.toString(),
         fecha: compra.invoice_date || "S/F",
         proveedor: Array.isArray(compra.partner_id) ? compra.partner_id[1] : "Desconocido",
-        tipoOperacion: esFiscal ? "Factura" : "Nota de Entrega",
+        tipoOperacion: tipoOperacion,
+        moneda: moneda,
         referencia: compra.name || "N/A",
         exento: 0,
         baseImponible: baseImponible,

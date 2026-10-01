@@ -11,6 +11,8 @@ export default function ComprasPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>({ key: 'fecha', direction: 'desc' });
   const [currentPage, setCurrentPage] = useState(1);
+  const [filtroOperacion, setFiltroOperacion] = useState("Todas");
+  const [filtroMoneda, setFiltroMoneda] = useState("Todas");
   const itemsPerPage = 50;
 
   const getCaracasDate = () => {
@@ -62,7 +64,7 @@ export default function ComprasPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, fechaInicio, fechaFin]);
+  }, [searchTerm, fechaInicio, fechaFin, filtroOperacion, filtroMoneda]);
 
   const handleSort = (key: string) => {
     let direction: "asc" | "desc" = "asc";
@@ -72,11 +74,17 @@ export default function ComprasPage() {
     setSortConfig({ key, direction });
   };
 
-  let filteredCompras = compras.filter(compra => 
-    (compra.proveedor?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-    (compra.estadoPago?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-    (compra.referencia?.toLowerCase() || "").includes(searchTerm.toLowerCase())
-  );
+  let filteredCompras = compras.filter(compra => {
+    const matchSearch = 
+      (compra.proveedor?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+      (compra.estadoPago?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+      (compra.referencia?.toLowerCase() || "").includes(searchTerm.toLowerCase());
+      
+    const matchOperacion = filtroOperacion === "Todas" || compra.tipoOperacion === filtroOperacion;
+    const matchMoneda = filtroMoneda === "Todas" || compra.moneda === filtroMoneda;
+    
+    return matchSearch && matchOperacion && matchMoneda;
+  });
 
   const totales = filteredCompras.reduce((acc, curr) => ({
     totalOperacion: acc.totalOperacion + (curr.totalOperacion || 0),
@@ -147,7 +155,28 @@ export default function ComprasPage() {
               className="w-full bg-background border border-border rounded-lg pl-9 pr-4 py-2 text-sm focus:outline-none focus:border-primary"
             />
           </div>
-          <div className="flex gap-2 items-center">
+          <div className="flex flex-wrap gap-2 items-center">
+            <select
+              value={filtroOperacion}
+              onChange={(e) => setFiltroOperacion(e.target.value)}
+              className="bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
+            >
+              <option value="Todas">Todas las Operaciones</option>
+              <option value="Factura">Factura Fiscal</option>
+              <option value="Nota de Entrega">Nota de Entrega</option>
+            </select>
+            
+            <select
+              value={filtroMoneda}
+              onChange={(e) => setFiltroMoneda(e.target.value)}
+              className="bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
+            >
+              <option value="Todas">Todas las Monedas</option>
+              <option value="USD">USD ($)</option>
+              <option value="VED">VED (Bs)</option>
+              <option value="VEF">VEF (Bs)</option>
+            </select>
+
             <div className="flex items-center gap-2 bg-background border border-border rounded-lg px-2 py-1">
               <span className="text-sm text-muted-foreground">Desde:</span>
               <input 
@@ -255,6 +284,7 @@ export default function ComprasPage() {
                       <span className={`px-2 py-1 rounded-md text-xs font-medium ${compra.tipoOperacion === 'Factura' ? 'bg-blue-500/10 text-blue-500' : 'bg-purple-500/10 text-purple-500'}`}>
                         {compra.tipoOperacion}
                       </span>
+                      <span className="ml-2 text-xs text-muted-foreground">{compra.moneda}</span>
                     </td>
                     <td className="px-4 py-3 text-left">{compra.referencia}</td>
                     <td className="px-4 py-3 text-right font-semibold">{formatCurrency(compra.totalOperacion, true)}</td>

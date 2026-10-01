@@ -48,7 +48,7 @@ El desarrollo cuenta con implementaciones transversales en las tablas para asegu
 * **Encabezados Fijos (Sticky Headers):** Mantiene fijos los títulos de las columnas y totales al hacer scroll vertical en las tablas.
 * **Totales a la Vista:** Todos los montos se suman dinámicamente y se muestran tanto al **pie de la tabla (TFOOT)** como en los **encabezados de las columnas (THEAD)**, agilizando el control del cuadre.
 * **Ordenamiento Dinámico:** Todas las columnas son ordenables (ascendente/descendente) mediante flechas interactivas.
-* **Filtros Personalizados:** Búsquedas por nombre de proveedor, fecha, referencia, tipo de moneda (Bs/USD) y tipo de documento (Factura/Nota).
+* **Filtros Personalizados Avanzados:** Búsquedas por nombre de proveedor, fecha, referencia, **tipo de moneda (USD, VED, VEF)** y **tipo de operación (Factura Fiscal, Nota de Entrega)** aplicables tanto a Compras como a Gastos.
 * **Tooltips Visuales (Hover):** En celdas complejas (ej. Múltiples pagos), pasar el cursor despliega un menú flotante con el desglose exacto por método de pago.
 * **Doble Visión Monetaria:** La aplicación siempre muestra la referencia dual. Los montos en Bolívares incluyen debajo su equivalente en USD para rápida verificación.
 
@@ -77,11 +77,11 @@ Es el centro de mando. Recolecta indicadores de salud de la empresa con los sigu
 
 ### 3. Compras (Inventario)
 * **Origen:** 100% Odoo (`account.move` para facturas y devoluciones de proveedores).
-* **Lógica Estructural:** Aplica las mismas capacidades de navegación y UX del módulo de Ingresos (Paginación, Sticky Headers, Sumatorias en Títulos, Ordenamientos).
+* **Lógica Estructural:** Aplica las mismas capacidades de navegación y UX del módulo de Ingresos (Paginación, Sticky Headers, Sumatorias en Títulos, Ordenamientos, Filtros de Operación y Moneda).
 * **Separación Operativa y Contable:**
   * **Compra de Mercancías:** Solo se consideran Compras aquellas facturas cuyas líneas afecten la cuenta contable `5111001`.
   * **Retención de Impuestos (25%):** Se extrae específicamente el monto de las líneas que afecten la cuenta contable `2131004`.
-  * **Documentos Fiscales vs No Fiscales:** Identifica automáticamente si poseen Base Imponible e Impuestos desglosados.
+  * **Documentos Fiscales vs No Fiscales:** Identifica automáticamente si poseen Base Imponible e Impuestos desglosados, y lo asocia al Diario (`journal_id`).
 
 ### 4. Cuentas por Cobrar (CxC)
 * **Lógica:** Se auditan las ventas de Odoo para identificar operaciones donde el cliente adeuda una porción (Cashea, créditos corporativos). Estos montos entran a un seguimiento de "Cuentas por Cobrar" directo del módulo de Ingresos/Dashboard.
@@ -94,7 +94,8 @@ Es el centro de mando. Recolecta indicadores de salud de la empresa con los sigu
 * **Origen:** Híbrido (Odoo / Local).
 * **Lógica de Clasificación:** Toda compra o factura de proveedor proveniente de Odoo que afecte una cuenta contable de **categoría 6 o 7** (ej. 6xxxxx o 7xxxxx) se excluye automáticamente del módulo de Compras y aterriza en esta sección como un Gasto.
 * **Retención de Impuestos (25%):** Al igual que en Compras, si la factura del gasto posee una línea que afecte la cuenta `2131004`, se extrae el monto para mostrar la retención aplicada al gasto.
-* **Creación Hacia Odoo:** Su función también es crear en Odoo los gastos según el tipo de documento (Factura o Nota), utilizando un concepto o servicio configurado para volcar gastos a contabilidad sin distorsionar inventarios.
+* **Creación Hacia Odoo:** El sistema incluye la funcionalidad de crear nuevos gastos desde la app de TecnoGestión y enviarlos directamente a Odoo (`account.move`) impactando la contabilidad en tiempo real sin distorsionar inventarios.
+
 
 ### 7. Tesorería
 * **Origen:** PostgreSQL (Local).

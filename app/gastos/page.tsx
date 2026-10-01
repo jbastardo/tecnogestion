@@ -12,6 +12,8 @@ export default function GastosPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>({ key: 'fecha', direction: 'desc' });
   const [currentPage, setCurrentPage] = useState(1);
+  const [filtroOperacion, setFiltroOperacion] = useState("Todas");
+  const [filtroMoneda, setFiltroMoneda] = useState("Todas");
   const itemsPerPage = 50;
 
   const getCaracasDate = () => {
@@ -72,7 +74,7 @@ export default function GastosPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, fechaInicio, fechaFin]);
+  }, [searchTerm, fechaInicio, fechaFin, filtroOperacion, filtroMoneda]);
 
   const handleSort = (key: string) => {
     let direction: "asc" | "desc" = "asc";
@@ -82,11 +84,17 @@ export default function GastosPage() {
     setSortConfig({ key, direction });
   };
 
-  let filteredGastos = gastos.filter(gasto => 
-    (gasto.proveedor?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-    (gasto.concepto?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-    (gasto.tipoGasto?.toLowerCase() || "").includes(searchTerm.toLowerCase())
-  );
+  let filteredGastos = gastos.filter(gasto => {
+    const matchSearch = 
+      (gasto.proveedor?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+      (gasto.concepto?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+      (gasto.tipoGasto?.toLowerCase() || "").includes(searchTerm.toLowerCase());
+      
+    const matchOperacion = filtroOperacion === "Todas" || gasto.tipoOperacion === filtroOperacion;
+    const matchMoneda = filtroMoneda === "Todas" || gasto.moneda === filtroMoneda;
+    
+    return matchSearch && matchOperacion && matchMoneda;
+  });
 
   const totales = filteredGastos.reduce((acc, curr) => ({
     totalPagar: acc.totalPagar + (curr.totalPagar || 0),
@@ -140,7 +148,7 @@ export default function GastosPage() {
             className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-2 shadow-sm"
           >
             <Plus size={16} />
-            Nuevo Gasto Local
+            Nuevo Gasto
           </button>
         </div>
       </div>
@@ -157,7 +165,27 @@ export default function GastosPage() {
               className="w-full bg-background border border-border rounded-lg pl-9 pr-4 py-2 text-sm focus:outline-none focus:border-primary"
             />
           </div>
-          <div className="flex gap-2 items-center">
+          <div className="flex flex-wrap gap-2 items-center">
+            <select
+              value={filtroOperacion}
+              onChange={(e) => setFiltroOperacion(e.target.value)}
+              className="bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
+            >
+              <option value="Todas">Todas las Operaciones</option>
+              <option value="Factura">Factura Fiscal</option>
+              <option value="Nota de Entrega">Nota de Entrega</option>
+            </select>
+            
+            <select
+              value={filtroMoneda}
+              onChange={(e) => setFiltroMoneda(e.target.value)}
+              className="bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
+            >
+              <option value="Todas">Todas las Monedas</option>
+              <option value="USD">USD ($)</option>
+              <option value="VED">VED (Bs)</option>
+              <option value="VEF">VEF (Bs)</option>
+            </select>
             <div className="flex items-center gap-2 bg-background border border-border rounded-lg px-2 py-1">
               <span className="text-sm text-muted-foreground">Desde:</span>
               <input 
@@ -257,8 +285,16 @@ export default function GastosPage() {
                     <td className="px-4 py-3 font-medium">{gasto.fecha || "S/F"}</td>
                     <td className="px-4 py-3 max-w-[200px] truncate">{gasto.proveedor}</td>
                     <td className="px-4 py-3 text-left">
-                      <span className="block max-w-[150px] truncate">{gasto.concepto}</span>
-                      <span className="text-xs text-muted-foreground bg-secondary/50 px-1 rounded">{gasto.tipoGasto}</span>
+                      <span className="block max-w-[150px] truncate font-medium">{gasto.concepto}</span>
+                      <div className="flex items-center gap-1 mt-1">
+                        <span className="text-[10px] text-muted-foreground bg-secondary/50 px-1 rounded">{gasto.tipoGasto}</span>
+                        {gasto.tipoOperacion && (
+                          <span className={`text-[10px] px-1 rounded ${gasto.tipoOperacion === 'Factura' ? 'bg-blue-500/10 text-blue-500' : 'bg-purple-500/10 text-purple-500'}`}>
+                            {gasto.tipoOperacion}
+                          </span>
+                        )}
+                        {gasto.moneda && <span className="text-[10px] text-muted-foreground">{gasto.moneda}</span>}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-right font-semibold">{formatCurrency(gasto.totalPagar, true)}</td>
                     <td className="px-4 py-3 text-right text-emerald-400">{formatCurrency(gasto.baseImponible, true)}</td>
