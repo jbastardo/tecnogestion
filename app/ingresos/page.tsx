@@ -136,27 +136,26 @@ export default function IngresosPage() {
                     Fecha <ArrowUpDown size={14} />
                   </button>
                 </th>
-                <th className="px-4 py-3 font-medium text-right">Base Imponible Z</th>
-                <th className="px-4 py-3 font-medium text-right">IVA Z</th>
-                <th className="px-4 py-3 font-medium text-right">Nota Entrega</th>
-                <th className="px-4 py-3 font-medium text-right">Efectivo Bs</th>
-                <th className="px-4 py-3 font-medium text-right">Bancos</th>
-                <th className="px-4 py-3 font-medium text-right">Efectivo $</th>
-                <th className="px-4 py-3 font-medium text-right">Zelle $</th>
-                <th className="px-4 py-3 font-medium text-right">Binance $</th>
+                <th className="px-4 py-3 font-medium text-left">Operación</th>
+                <th className="px-4 py-3 font-medium text-left">Referencia</th>
+                <th className="px-4 py-3 font-medium text-right">Total Operación</th>
+                <th className="px-4 py-3 font-medium text-right text-emerald-500">Ingreso Neto (Base)</th>
+                <th className="px-4 py-3 font-medium text-right text-amber-500">Impuestos</th>
+                <th className="px-4 py-3 font-medium text-right">Pagado (Total)</th>
+                <th className="px-4 py-3 font-medium text-right text-red-400">Por Cobrar (CxC)</th>
                 <th className="px-4 py-3 font-medium text-center">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {loading ? (
                 <tr>
-                  <td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
                     Cargando registros...
                   </td>
                 </tr>
               ) : filteredIngresos.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
                     No hay registros encontrados.
                   </td>
                 </tr>
@@ -164,14 +163,17 @@ export default function IngresosPage() {
                 filteredIngresos.map((ingreso) => (
                   <tr key={ingreso.id} className="hover:bg-muted/50 transition-colors">
                     <td className="px-4 py-3 font-medium">{ingreso.fecha || "S/F"}</td>
-                    <td className="px-4 py-3 text-right">{formatCurrency(ingreso.baseImponibleZ)}</td>
-                    <td className="px-4 py-3 text-right">{formatCurrency(ingreso.ivaZ)}</td>
-                    <td className="px-4 py-3 text-right">{formatCurrency(ingreso.notasEntrega)}</td>
-                    <td className="px-4 py-3 text-right text-emerald-400">{formatCurrency(ingreso.efectivoBs)}</td>
-                    <td className="px-4 py-3 text-right text-blue-400">{formatCurrency(ingreso.bancos)}</td>
-                    <td className="px-4 py-3 text-right text-emerald-500">{formatCurrency(ingreso.usd, true)}</td>
-                    <td className="px-4 py-3 text-right text-purple-400">{formatCurrency(ingreso.zelle, true)}</td>
-                    <td className="px-4 py-3 text-right text-yellow-500">{formatCurrency(ingreso.binance, true)}</td>
+                    <td className="px-4 py-3 text-left">
+                      <span className={`px-2 py-1 rounded-md text-xs font-medium ${ingreso.tipoOperacion === 'Factura' ? 'bg-blue-500/10 text-blue-500' : 'bg-purple-500/10 text-purple-500'}`}>
+                        {ingreso.tipoOperacion}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-left">{ingreso.referencia}</td>
+                    <td className="px-4 py-3 text-right font-semibold">{formatCurrency(ingreso.totalOperacion, true)}</td>
+                    <td className="px-4 py-3 text-right text-emerald-400">{formatCurrency(ingreso.baseImponible, true)}</td>
+                    <td className="px-4 py-3 text-right text-amber-400">{formatCurrency(ingreso.impuestos, true)}</td>
+                    <td className="px-4 py-3 text-right text-emerald-600">{formatCurrency(ingreso.pagadoTotal, true)}</td>
+                    <td className="px-4 py-3 text-right text-red-400">{formatCurrency(ingreso.cxc, true)}</td>
                     <td className="px-4 py-3 text-center">
                       <button onClick={() => handleDelete(ingreso.id)} className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors" title="Eliminar Ingreso">
                         <Trash2 size={16} />
