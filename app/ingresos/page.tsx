@@ -263,6 +263,7 @@ export default function IngresosPage() {
                     Pagos Bs <ArrowUpDown size={14} className={sortConfig?.key === 'pagadoBsReal' ? 'text-primary' : 'opacity-50'} />
                   </button>
                   <div className="text-xs font-bold mt-1">{formatCurrency(totales.pagadoBsReal, false)}</div>
+                  <div className="text-[10px] font-normal text-muted-foreground/80 leading-tight">{formatCurrency(totales.pagadoBs, true)}</div>
                 </th>
                 <th className="px-4 py-3 font-medium text-right text-purple-400 align-top">
                   <button onClick={() => handleSort('pagadoRetencion')} className="flex items-center justify-end gap-1 hover:text-foreground transition-colors w-full">
@@ -314,7 +315,8 @@ export default function IngresosPage() {
                       {ingreso.tasaAplicada ? Number(ingreso.tasaAplicada).toFixed(2) : '-'}
                     </td>
                     <td className="px-4 py-3 text-right text-blue-400 group relative">
-                      {formatCurrency(ingreso.pagadoBsReal, false)}
+                      <div>{formatCurrency(ingreso.pagadoBsReal, false)}</div>
+                      <div className="text-[10px] text-muted-foreground/70">{formatCurrency(ingreso.pagadoBs, true)}</div>
                       {ingreso.pagos && ingreso.pagos.length > 0 && (
                         <div className="absolute hidden group-hover:block bg-popover text-popover-foreground p-2 rounded shadow-lg text-xs z-10 w-48 right-0 border border-border">
                           <div className="font-semibold mb-1 border-b border-border pb-1">Métodos de Pago</div>
@@ -348,7 +350,10 @@ export default function IngresosPage() {
                 <td className="px-4 py-3 text-right text-emerald-600">{formatCurrency(totales.pagadoTotal, true)}</td>
                 <td className="px-4 py-3 text-right text-indigo-400">{formatCurrency(totales.pagadoUSD, true)}</td>
                 <td className="px-4 py-3 text-right text-muted-foreground">-</td>
-                <td className="px-4 py-3 text-right text-blue-400">{formatCurrency(totales.pagadoBsReal, false)}</td>
+                <td className="px-4 py-3 text-right text-blue-400">
+                  <div>{formatCurrency(totales.pagadoBsReal, false)}</div>
+                  <div className="text-[10px] text-muted-foreground/70">{formatCurrency(totales.pagadoBs, true)}</div>
+                </td>
                 <td className="px-4 py-3 text-right text-purple-400">{formatCurrency(totales.pagadoRetencion, true)}</td>
                 <td className="px-4 py-3 text-right text-red-400">{formatCurrency(totales.cxc, true)}</td>
                 <td></td>
