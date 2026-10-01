@@ -155,6 +155,94 @@ const item = {
         </motion.div>
       </motion.div>
 
+      {/* DETALLES DE MÓDULOS */}
+      <motion.div 
+        variants={container}
+        initial="hidden"
+        animate="show"
+        className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"
+      >
+        {/* VENTAS */}
+        <motion.div variants={item} className="rounded-xl border border-border bg-card p-6 shadow-sm">
+          <h3 className="tracking-tight text-sm font-medium mb-4 text-emerald-400">Desglose de Ventas</h3>
+          <div className="space-y-3">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Ingresos (Neto)</span>
+              <span className="font-medium">${dashboardData.detalles.ventas.total.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Impuestos Generados</span>
+              <span className="font-medium">${dashboardData.detalles.ventas.impuestos.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">CxC (Por Cobrar)</span>
+              <span className="font-medium text-amber-400">${dashboardData.detalles.ventas.cxc.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* COMPRAS */}
+        <motion.div variants={item} className="rounded-xl border border-border bg-card p-6 shadow-sm">
+          <h3 className="tracking-tight text-sm font-medium mb-4 text-blue-400">Desglose de Compras</h3>
+          <div className="space-y-3">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Reposición Mercancía</span>
+              <span className="font-medium">${dashboardData.detalles.compras.totalReposicion.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Retención IVA (25%)</span>
+              <span className="font-medium text-destructive">${dashboardData.detalles.compras.iva25.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* GASTOS */}
+        <motion.div variants={item} className="rounded-xl border border-border bg-card p-6 shadow-sm">
+          <h3 className="tracking-tight text-sm font-medium mb-4 text-destructive">Desglose de Gastos</h3>
+          <div className="space-y-3">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Nómina</span>
+              <span className="font-medium">${dashboardData.detalles.gastos.nomina.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Servicios</span>
+              <span className="font-medium">${dashboardData.detalles.gastos.servicios.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Gastos Operativos</span>
+              <span className="font-medium">${dashboardData.detalles.gastos.otros.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+            </div>
+            <div className="flex justify-between text-sm border-t border-border pt-2">
+              <span className="text-muted-foreground">Retención IVA (25%)</span>
+              <span className="font-medium text-destructive">${dashboardData.detalles.gastos.iva25.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* MOVIMIENTOS CAJA/BANCO */}
+        <motion.div variants={item} className="rounded-xl border border-border bg-card p-6 shadow-sm">
+          <h3 className="tracking-tight text-sm font-medium mb-4 text-purple-400">Movimientos y Saldos</h3>
+          <div className="space-y-3">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Total Bancos (Bs)</span>
+              <span className="font-medium">Bs. 0.00</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Total Bancos (USD)</span>
+              <span className="font-medium">$ 0.00</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Total Cajas (Bs)</span>
+              <span className="font-medium">Bs. 0.00</span>
+            </div>
+            <div className="flex justify-between text-sm border-t border-border pt-2">
+              <span className="text-muted-foreground">Total Cajas (USD)</span>
+              <span className="font-medium">$ 8,543.00</span>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
