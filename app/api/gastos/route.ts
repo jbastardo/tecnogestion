@@ -106,13 +106,15 @@ export async function GET(req: Request) {
         if (accountStr.startsWith('5111001')) {
           hasCompraMercancia = true;
         }
-        else if (accountStr.startsWith('2131004')) {
-          retencion25 += line.credit || line.debit || 0;
-        }
         else if (accountStr.startsWith('6') || accountStr.startsWith('7')) {
           isGasto = true;
           baseImponibleGasto += line.price_subtotal || 0;
         }
+      }
+
+      // Nueva regla: retencion 25% del IVA solo para facturas fiscales
+      if (isFactura) {
+        retencion25 = (compra.amount_tax || 0) * 0.25;
       }
 
       // Filtrar: Solo nos interesan las facturas que tengan gastos y que NO sean una compra de mercancía pura.

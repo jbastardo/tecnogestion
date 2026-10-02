@@ -59,7 +59,7 @@ El desarrollo cuenta con implementaciones transversales en las tablas para asegu
 ### 1. Dashboard (Resumen General)
 Es el centro de mando. Recolecta indicadores de salud de la empresa con los siguientes renglones específicos:
 * **VENTAS:** Ingresos (Bs y $), CxC (método de pago "crédito"), e Impuestos.
-* **COMPRAS:** Mercancías (Cuenta `5111001`) y 25% Pago de IVA (Cuenta `2131004`).
+* **COMPRAS:** Mercancías (Cuenta `5111001`) y 25% Retención de IVA (Cálculo directo: 25% del monto del IVA en Facturas Fiscales).
 * **GASTOS:** Nómina, Servicios y Gastos Operativos (Cuentas categoría `6` y `7`).
 * **MOVIMIENTOS:** Bancos (Bs y $) y Cajas (Bs y $).
 
@@ -80,7 +80,7 @@ Es el centro de mando. Recolecta indicadores de salud de la empresa con los sigu
 * **Lógica Estructural:** Aplica las mismas capacidades de navegación y UX del módulo de Ingresos (Paginación, Sticky Headers, Sumatorias en Títulos, Ordenamientos, Filtros de Operación y Moneda).
 * **Separación Operativa y Contable:**
   * **Compra de Mercancías:** Solo se consideran Compras aquellas facturas cuyas líneas afecten la cuenta contable `5111001`.
-  * **Retención de Impuestos (25%):** Se extrae específicamente el monto de las líneas que afecten la cuenta contable `2131004`.
+  * **Retención de Impuestos (25%):** Calculado automáticamente como el 25% del monto total de IVA en los documentos clasificados como "Factura Fiscal" (ignorado para Notas de Entrega).
   * **Documentos Fiscales vs No Fiscales:** Identifica automáticamente si poseen Base Imponible e Impuestos desglosados, y lo asocia al Diario (`journal_id`).
 
 ### 4. Cuentas por Cobrar (CxC)
@@ -93,7 +93,7 @@ Es el centro de mando. Recolecta indicadores de salud de la empresa con los sigu
 ### 6. Gastos CXP
 * **Origen:** Híbrido (Odoo / Local).
 * **Lógica de Clasificación:** Toda compra o factura de proveedor proveniente de Odoo que afecte una cuenta contable de **categoría 6 o 7** (ej. 6xxxxx o 7xxxxx) se excluye automáticamente del módulo de Compras y aterriza en esta sección como un Gasto.
-* **Retención de Impuestos (25%):** Al igual que en Compras, si la factura del gasto posee una línea que afecte la cuenta `2131004`, se extrae el monto para mostrar la retención aplicada al gasto.
+* **Retención de Impuestos (25%):** Al igual que en Compras, si el documento clasifica como Factura Fiscal, se extrae el 25% del total de IVA del documento para mostrar la retención aplicada al gasto.
 * **Creación Hacia Odoo:** El sistema incluye la funcionalidad de crear nuevos gastos desde la app de TecnoGestión y enviarlos directamente a Odoo (`account.move`) impactando la contabilidad en tiempo real sin distorsionar inventarios.
 
 

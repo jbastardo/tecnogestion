@@ -44,7 +44,7 @@ export async function GET(req: Request) {
     const comprasOdoo = await odoo.searchRead(
       'account.move',
       [['move_type', 'in', ['in_invoice', 'in_receipt']], ['invoice_date', '>=', fechaInicio], ['invoice_date', '<=', fechaFin], ['state', '=', 'posted']],
-      ['amount_total', 'amount_tax', 'invoice_line_ids', 'amount_untaxed']
+      ['amount_total', 'amount_tax', 'invoice_line_ids', 'amount_untaxed', 'journal_id']
     );
 
     const allLineIds = comprasOdoo.flatMap((m: any) => m.invoice_line_ids || []);
@@ -65,10 +65,12 @@ export async function GET(req: Request) {
     let gastos_iva25 = 0;
 
     for (const move of comprasOdoo) {
+      const journalName = (move.journal_id && move.journal_id[1]) ? move.journal_id[1].toLowerCase() : "";
+      const isFactura = journalName.includes("factura");
       let isGasto = false;
       let hasCompraMercancia = false;
       let baseGasto = 0;
-      let retencion25 = 0;
+      let retencion25 = isFactura ? (move.amount_tax || 0) * 0.25 : 0;
 
       const lineas = (move.invoice_line_ids || []).map((id: number) => linesMap[id]).filter(Boolean);
       
@@ -78,8 +80,6 @@ export async function GET(req: Request) {
         
         if (accountStr.startsWith('5111001')) {
           hasCompraMercancia = true;
-        } else if (accountStr.startsWith('2131004')) {
-          retencion25 += line.credit || line.debit || 0;
         } else if (accountStr.startsWith('6') || accountStr.startsWith('7')) {
           isGasto = true;
           baseGasto += line.price_subtotal || 0;
