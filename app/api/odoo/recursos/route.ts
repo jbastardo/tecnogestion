@@ -15,19 +15,29 @@ export async function GET(req: Request) {
     
     if (type === 'proveedores') {
       const query = searchParams.get('q') || '';
-      let domain: any = [];
-      if (query) {
-        domain = [['name', 'ilike', query]];
-      } else {
-        domain = [['supplier_rank', '>=', 0]]; // Load default ones
+      if (!query || query.length < 3) {
+        return NextResponse.json({ partners: [] }); // Solo buscar si hay al menos 3 caracteres
       }
-      const partners = await odoo.searchRead('res.partner', domain, ['id', 'name', 'vat'], 0, 100, 'id desc');
+      
+      const domain = ['|', ['name', 'ilike', query], ['vat', 'ilike', query]];
+      const partners = await odoo.searchRead('res.partner', domain, ['id', 'name', 'vat'], 0, 50, 'id desc');
       return NextResponse.json({ partners });
     }
     
     if (type === 'diarios') {
-      const diarios = await odoo.searchRead('account.journal', [['type', 'in', ['purchase', 'general', 'bank', 'cash']]], ['id', 'name', 'type']);
-      return NextResponse.json({ diarios });
+      const allJournals = await odoo.searchRead('account.journal', [], ['id', 'name', 'type']);
+      
+      const diariosNombres = ["Relación de Gastos", "Relacion de Gastos", "Recibos de Proveedores", "Factura de compras", "Facturas de compras"];
+      const metodosNombres = [
+        "Cuenta por cobrar a Cashea al BNC", "Binance", "Efectivo Dolares", "PDV Banesco Bs", 
+        "Banesco Cte Bs", "Venezuela Bs", "Retenciones IVA Proveedores", "Retenciones ISLR Proveedores", 
+        "Imp. Municipal Libertador Proveedores", "Banesco Panama $", "Banesco Panama CM $"
+      ];
+
+      const diarios = allJournals.filter((j: any) => diariosNombres.some(n => j.name.toLowerCase().includes(n.toLowerCase())));
+      const metodos_pago = allJournals.filter((j: any) => metodosNombres.some(n => j.name.toLowerCase().includes(n.toLowerCase())));
+      
+      return NextResponse.json({ diarios, metodos_pago });
     }
     
     if (type === 'cuentas_gasto') {
