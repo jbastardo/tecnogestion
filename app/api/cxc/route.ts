@@ -14,8 +14,6 @@ export async function GET(request: Request) {
     const fechaInicio = searchParams.get('inicio') || '2026-01-01';
     const fechaFin = searchParams.get('fin') || '2026-12-31';
 
-    await odoo.connect();
-
     // Accounts to track for CxC:
     // 1122001 -> Crédito Comercial
     // 1122007 -> Cashea
