@@ -265,6 +265,5 @@ export default function TesoreriaPage() {
           )}
         </div>
       </div>
-    </div>
   );
 }
