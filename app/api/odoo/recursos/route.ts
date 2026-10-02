@@ -29,7 +29,7 @@ export async function GET(req: Request) {
       
       const diariosNombres = ["Relación de Gastos", "Relacion de Gastos", "Recibos de Proveedores", "Factura de compras", "Facturas de compras"];
       const metodosNombres = [
-        "Cuenta por cobrar a Cashea al BNC", "Binance", "Efectivo Dolares", "PDV Banesco Bs", 
+        "Cuenta por cobrar a Cashea al BNC", "Binance", "Efectivo Dolares", 
         "Banesco Cte Bs", "Venezuela Bs", "Retenciones IVA Proveedores", "Retenciones ISLR Proveedores", 
         "Imp. Municipal Libertador Proveedores", "Banesco Panama $", "Banesco Panama CM $"
       ];
