@@ -106,6 +106,17 @@ export default function CxcPage() {
         </div>
       </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="rounded-xl border border-border bg-card shadow-sm p-6 flex flex-col justify-center">
+          <p className="text-sm text-muted-foreground font-medium mb-1">Total Pendiente USD</p>
+          <p className="text-3xl font-bold text-red-400">{formatCurrency(totales.saldoUSD, 'USD')}</p>
+        </div>
+        <div className="rounded-xl border border-border bg-card shadow-sm p-6 flex flex-col justify-center">
+          <p className="text-sm text-muted-foreground font-medium mb-1">Total Pendiente Bs</p>
+          <p className="text-3xl font-bold text-red-400">{formatCurrency(totales.saldoBs, 'VES')}</p>
+        </div>
+      </div>
+
       <div className="rounded-xl border border-border bg-card shadow-sm">
         <div className="p-4 border-b border-border flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="relative w-full md:w-72">
@@ -234,16 +245,6 @@ export default function CxcPage() {
                 ))
               )}
             </tbody>
-            <tfoot className="bg-muted/50 font-bold border-t-2 border-border">
-              <tr>
-                <td colSpan={5} className="px-4 py-3 text-right text-muted-foreground">Total Pendiente USD:</td>
-                <td className="px-4 py-3 text-right text-red-400">{formatCurrency(totales.saldoUSD, 'USD')}</td>
-              </tr>
-              <tr>
-                <td colSpan={5} className="px-4 py-3 text-right text-muted-foreground">Total Pendiente Bs:</td>
-                <td className="px-4 py-3 text-right text-red-400">{formatCurrency(totales.saldoBs, 'VES')}</td>
-              </tr>
-            </tfoot>
           </table>
         </div>
         

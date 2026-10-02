@@ -59,7 +59,7 @@ export async function GET(request: Request) {
         referencia: Array.isArray(line.move_id) ? line.move_id[1] : (line.name || "S/R"),
         concepto: concepto,
         moneda: moneda,
-        saldo: Math.abs(saldo), // Mostramos el saldo absoluto
+        saldo: saldo,
       };
     });
 
