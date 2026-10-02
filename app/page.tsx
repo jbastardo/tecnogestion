@@ -174,9 +174,12 @@ const item = {
               <span className="text-muted-foreground">Impuestos Generados</span>
               <span className="font-medium">${dashboardData.detalles.ventas.impuestos.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span>
             </div>
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between text-sm items-center">
               <span className="text-muted-foreground">CxC (Por Cobrar)</span>
-              <span className="font-medium text-amber-400">${dashboardData.detalles.ventas.cxc.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span>
+              <div className="text-right">
+                <div className="font-medium text-amber-400">${dashboardData.detalles.ventas.cxc.usd.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</div>
+                <div className="font-medium text-amber-400/80 text-xs">Bs. {dashboardData.detalles.ventas.cxc.ves.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</div>
+              </div>
             </div>
           </div>
         </motion.div>

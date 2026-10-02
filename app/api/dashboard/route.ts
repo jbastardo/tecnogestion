@@ -46,14 +46,16 @@ export async function GET(req: Request) {
       ],
       ['amount_residual', 'amount_residual_currency', 'currency_id']
     );
-    const totalCXC = cxcLines.reduce((acc: number, line: any) => {
-      let saldo = line.amount_residual || 0;
+    const totalCXC = cxcLines.reduce((acc: any, line: any) => {
       const currName = line.currency_id && line.currency_id[1] ? line.currency_id[1] : 'VES';
+      
       if (currName === 'USD' && line.amount_residual_currency) {
-         saldo = line.amount_residual_currency;
+         acc.usd += line.amount_residual_currency;
+      } else {
+         acc.ves += line.amount_residual || 0;
       }
-      return acc + Math.abs(saldo);
-    }, 0);
+      return acc;
+    }, { usd: 0, ves: 0 });
 
     // 2 & 3. COMPRAS Y GASTOS ODOO (account.move)
     const comprasOdoo = await odoo.searchRead(
