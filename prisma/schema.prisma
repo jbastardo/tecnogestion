@@ -181,9 +181,11 @@ model CuentaPorPagar {
 }
 
 model OrdenPago {
-  id       String          @id @default(cuid())
-  cxpId    String?
-  cxp      CuentaPorPagar? @relation(fields: [cxpId], references: [id])
+  id              String          @id @default(cuid())
+  cxpId           String?
+  cxp             CuentaPorPagar? @relation(fields: [cxpId], references: [id])
+  gastoRef        String?         // Referencia al gasto (ej. 'odoo_123' o 'local_123')
+  proveedorNombre String?         // Nombre del proveedor desnormalizado para listados rápidos
   concepto String
   montoBs  Float           @default(0)
   montoUsd Float           @default(0)
