@@ -20,7 +20,7 @@ export default function CxcPage() {
     return caracasTime.toISOString().split('T')[0];
   };
 
-  const [fechaInicio, setFechaInicio] = useState("2026-01-01"); // Rango amplio por defecto para CxC
+  const [fechaInicio, setFechaInicio] = useState(getCaracasDate());
   const [fechaFin, setFechaFin] = useState(getCaracasDate());
 
   const fetchCxc = () => {
