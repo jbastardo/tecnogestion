@@ -54,11 +54,12 @@ export class OdooService {
     });
   }
 
-  async searchRead(model: string, domain: any[] = [], fields: string[] = [], offset = 0, limit = 0): Promise<any[]> {
+  async searchRead(model: string, domain: any[] = [], fields: string[] = [], offset = 0, limit = 0, order: string = ''): Promise<any[]> {
     const kwargs: any = {};
     if (fields.length > 0) kwargs.fields = fields;
     if (offset > 0) kwargs.offset = offset;
     if (limit > 0) kwargs.limit = limit;
+    if (order) kwargs.order = order;
 
     return this.executeKw(model, 'search_read', [domain], kwargs);
   }
