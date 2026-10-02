@@ -1,5 +1,12 @@
 import { NextResponse } from 'next/server';
-import { getOdooClient } from '@/lib/odoo';
+import { OdooService } from '@/lib/odoo';
+
+const odoo = new OdooService({
+  url: process.env.ODOO_URL || 'https://www.onprotec.shop',
+  db: process.env.ODOO_DB || 'binaural-dev-onprotec-16-release-8815487',
+  username: process.env.ODOO_USERNAME || 'juan@onprotec.com',
+  password: process.env.ODOO_PASSWORD || '47028d0d8c58c126b1e9276bec43158fc0c7ee41'
+});
 
 export async function GET(request: Request) {
   try {
@@ -7,7 +14,6 @@ export async function GET(request: Request) {
     const fechaInicio = searchParams.get('inicio') || '2026-01-01';
     const fechaFin = searchParams.get('fin') || '2026-12-31';
 
-    const odoo = getOdooClient();
     await odoo.connect();
 
     // Accounts to track for CxC:
