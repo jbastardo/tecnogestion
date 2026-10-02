@@ -35,7 +35,13 @@ export async function GET(req: Request) {
 
     const cxcLines = await odoo.searchRead(
       'account.move.line',
-      [['account_id.account_type', '=', 'asset_receivable'], ['parent_state', '=', 'posted'], ['amount_residual', '!=', 0]],
+      [
+        ['account_id.account_type', '=', 'asset_receivable'], 
+        ['parent_state', '=', 'posted'], 
+        ['amount_residual', '!=', 0],
+        ['date', '>=', fechaInicio],
+        ['date', '<=', fechaFin]
+      ],
       ['amount_residual']
     );
     const totalCXC = cxcLines.reduce((acc: number, line: any) => acc + line.amount_residual, 0);

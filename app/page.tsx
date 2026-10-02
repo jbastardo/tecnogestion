@@ -109,7 +109,7 @@ const item = {
             <h3 className="tracking-tight text-sm font-medium">Ingresos Totales</h3>
             <DollarSign className="h-4 w-4 text-emerald-400" />
           </div>
-          <div className="text-2xl font-bold">${dashboardData.ingresosTotales.toLocaleString("en-US", { minimumFractionDigits: 2 })}</div>
+          <div className="text-2xl font-bold">${dashboardData.ingresosTotales.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</div>
           <p className="text-xs text-emerald-400 flex items-center mt-1">
             <ArrowUpRight className="mr-1 h-3 w-3" />
             +20.1% desde el mes pasado
@@ -122,7 +122,7 @@ const item = {
             <h3 className="tracking-tight text-sm font-medium">Gastos Operativos</h3>
             <CreditCard className="h-4 w-4 text-destructive" />
           </div>
-          <div className="text-2xl font-bold">${dashboardData.gastosTotales.toLocaleString("en-US", { minimumFractionDigits: 2 })}</div>
+          <div className="text-2xl font-bold">${dashboardData.gastosTotales.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</div>
           <p className="text-xs text-destructive flex items-center mt-1">
             <ArrowUpRight className="mr-1 h-3 w-3" />
             +4.3% desde el mes pasado
@@ -135,7 +135,7 @@ const item = {
             <h3 className="tracking-tight text-sm font-medium">Fondo en Caja</h3>
             <Wallet className="h-4 w-4 text-blue-400" />
           </div>
-          <div className="text-2xl font-bold">${dashboardData.fondoCaja.toLocaleString("en-US", { minimumFractionDigits: 2 })}</div>
+          <div className="text-2xl font-bold">${dashboardData.fondoCaja.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</div>
           <p className="text-xs text-muted-foreground mt-1">
             Efectivo disponible en bóveda
           </p>
@@ -168,15 +168,15 @@ const item = {
           <div className="space-y-3">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Ingresos (Neto)</span>
-              <span className="font-medium">${dashboardData.detalles.ventas.total.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+              <span className="font-medium">${dashboardData.detalles.ventas.total.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Impuestos Generados</span>
-              <span className="font-medium">${dashboardData.detalles.ventas.impuestos.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+              <span className="font-medium">${dashboardData.detalles.ventas.impuestos.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">CxC (Por Cobrar)</span>
-              <span className="font-medium text-amber-400">${dashboardData.detalles.ventas.cxc.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+              <span className="font-medium text-amber-400">${dashboardData.detalles.ventas.cxc.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span>
             </div>
           </div>
         </motion.div>
@@ -187,11 +187,11 @@ const item = {
           <div className="space-y-3">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Reposición Mercancía</span>
-              <span className="font-medium">${dashboardData.detalles.compras.totalReposicion.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+              <span className="font-medium">${dashboardData.detalles.compras.totalReposicion.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Retención IVA (25%)</span>
-              <span className="font-medium text-destructive">${dashboardData.detalles.compras.iva25.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+              <span className="font-medium text-destructive">${dashboardData.detalles.compras.iva25.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span>
             </div>
           </div>
         </motion.div>
@@ -202,19 +202,19 @@ const item = {
           <div className="space-y-3">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Nómina</span>
-              <span className="font-medium">${dashboardData.detalles.gastos.nomina.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+              <span className="font-medium">${dashboardData.detalles.gastos.nomina.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Servicios</span>
-              <span className="font-medium">${dashboardData.detalles.gastos.servicios.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+              <span className="font-medium">${dashboardData.detalles.gastos.servicios.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Gastos Operativos</span>
-              <span className="font-medium">${dashboardData.detalles.gastos.otros.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+              <span className="font-medium">${dashboardData.detalles.gastos.otros.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span>
             </div>
             <div className="flex justify-between text-sm border-t border-border pt-2">
               <span className="text-muted-foreground">Retención IVA (25%)</span>
-              <span className="font-medium text-destructive">${dashboardData.detalles.gastos.iva25.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+              <span className="font-medium text-destructive">${dashboardData.detalles.gastos.iva25.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span>
             </div>
           </div>
         </motion.div>
