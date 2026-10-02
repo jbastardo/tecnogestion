@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { Briefcase, CreditCard, CheckCircle2, XCircle, Search, RefreshCcw, DollarSign, ArrowRightLeft, Landmark } from 'lucide-react';
-import Sidebar from '@/components/layout/Sidebar';
 
 export default function TesoreriaPage() {
   const [tab, setTab] = useState('pendientes'); // 'pendientes' | 'ordenes'
@@ -12,37 +11,41 @@ export default function TesoreriaPage() {
   const [loading, setLoading] = useState(true);
 
   const fetchPendientes = async () => {
-    // 30 dias de rango
-    const url = `/api/gastos`;
-    const res = await fetch(url);
-    if(res.ok) {
-      const data = await res.json();
-      const porPagar = data.gastos.filter((g: any) => g.status === 'POR PAGAR' || g.cxp > 0);
-      setPendientes(porPagar);
-    }
+    try {
+      const url = `/api/gastos`;
+      const res = await fetch(url);
+      if(res.ok) {
+        const data = await res.json();
+        const porPagar = data.gastos.filter((g: any) => g.status === 'POR PAGAR' || g.cxp > 0);
+        setPendientes(porPagar);
+      }
+    } catch(e) { console.error(e); }
   };
 
   const fetchOrdenes = async () => {
-    const res = await fetch('/api/tesoreria');
-    if(res.ok) {
-      const data = await res.json();
-      setOrdenes(data.ordenes);
-    }
+    try {
+      const res = await fetch('/api/tesoreria');
+      if(res.ok) {
+        const data = await res.json();
+        setOrdenes(data.ordenes);
+      }
+    } catch(e) { console.error(e); }
   };
 
   const fetchCajas = async () => {
-    // Solo necesitamos las cajas locales y bancos para ejecutar los pagos
-    const res = await fetch('/api/caja/global');
-    if(res.ok) {
-      const data = await res.json();
-      const localesYBancos = data.resumen.filter((c: any) => c.tipo !== 'odoo_pos');
-      setCajas(localesYBancos);
-    }
+    try {
+      const res = await fetch('/api/caja/global');
+      if(res.ok) {
+        const data = await res.json();
+        const localesYBancos = data.resumen.filter((c: any) => c.tipo !== 'odoo_pos');
+        setCajas(localesYBancos);
+      }
+    } catch(e) { console.error(e); }
   };
 
   const loadData = async () => {
     setLoading(true);
-    await Promise.all([fetchPendientes(), fetchOrdenes(), fetchCajas()]);
+    await Promise.allSettled([fetchPendientes(), fetchOrdenes(), fetchCajas()]);
     setLoading(false);
   };
 
@@ -89,22 +92,20 @@ export default function TesoreriaPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <Sidebar />
-      <main className="flex-1 flex flex-col h-screen overflow-hidden">
-        <header className="h-16 flex items-center justify-between px-6 border-b border-border bg-card">
-          <div className="flex items-center gap-2 text-foreground">
-            <Briefcase size={24} className="text-primary" />
-            <h2 className="text-xl font-bold">Tesorería y Pagos</h2>
-          </div>
-          <button onClick={loadData} className="p-2 hover:bg-secondary rounded-full transition-colors text-muted-foreground hover:text-foreground">
-            <RefreshCcw size={20} className={loading ? "animate-spin text-primary" : ""} />
-          </button>
-        </header>
-        
-        <div className="p-6 flex-1 overflow-auto">
-          {/* Tabs */}
-          <div className="flex gap-4 mb-6">
+    <div className="flex flex-col h-full gap-6">
+      <header className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-foreground">
+          <Briefcase size={24} className="text-primary" />
+          <h2 className="text-2xl font-bold">Tesorería y Pagos</h2>
+        </div>
+        <button onClick={loadData} className="p-2 hover:bg-secondary rounded-full transition-colors text-muted-foreground hover:text-foreground">
+          <RefreshCcw size={20} className={loading ? "animate-spin text-primary" : ""} />
+        </button>
+      </header>
+      
+      <div className="flex-1 flex flex-col min-h-0">
+        {/* Tabs */}
+        <div className="flex gap-4 mb-6">
             <button
               onClick={() => setTab('pendientes')}
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${tab === 'pendientes' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-secondary'}`}
@@ -263,7 +264,7 @@ export default function TesoreriaPage() {
             </div>
           )}
         </div>
-      </main>
+      </div>
     </div>
   );
 }

@@ -177,8 +177,8 @@ export async function GET(req: Request) {
     return NextResponse.json({
       ingresosTotales: totalVentas,
       gastosTotales: totalGastosAgregados,
-      fondoCaja: 8543.00, // TODO: sacar de Odoo cajas
-      margenNeto: totalVentas > 0 ? ((totalVentas - totalGastosAgregados) / totalVentas) * 100 : 0,
+      fondoCaja: 0, // Fetch in frontend via /api/caja/global
+      margenNeto: totalVentas > 0 ? ((totalVentas - compras_totalReposicion - totalGastosAgregados) / totalVentas) * 100 : 0,
       graficoMensual,
       graficoMetodosPago: [], 
       detalles: {

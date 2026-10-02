@@ -7,6 +7,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 
 export default function Home() {
   const [dashboardData, setDashboardData] = useState<any>(null);
+  const [cajaData, setCajaData] = useState<any>(null);
   
   // Obtener fecha actual en zona horaria de Caracas (UTC-4)
   const getCaracasDate = () => {
@@ -21,19 +22,37 @@ export default function Home() {
   useEffect(() => {
     setDashboardData(null); // Mostrar loading
 
-    fetch(`/api/dashboard?inicio=${fechaInicio}&fin=${fechaFin}`)
-      .then(res => {
-        if (!res.ok) throw new Error('Error al cargar datos');
-        return res.json();
-      })
-      .then(data => {
-        if (data.error) throw new Error(data.error);
-        setDashboardData(data);
-      })
-      .catch(err => {
-        console.error(err);
-        setDashboardData({ error: true });
-      });
+    Promise.all([
+      fetch(`/api/dashboard?inicio=${fechaInicio}&fin=${fechaFin}`).then(r => r.json()),
+      fetch(`/api/caja/global`).then(r => r.json())
+    ])
+    .then(([dashData, cData]) => {
+      if (dashData.error) throw new Error(dashData.error);
+      setDashboardData(dashData);
+      
+      // Calculate split between Cajas and Bancos
+      let totalBancosBs = 0;
+      let totalBancosUsd = 0;
+      let totalCajasBs = 0;
+      let totalCajasUsd = 0;
+      
+      if (cData && cData.cajas) {
+        cData.cajas.forEach((c: any) => {
+          if (c.id.toString().startsWith('banco_')) {
+            totalBancosBs += c.saldoActualBs || 0;
+            totalBancosUsd += c.saldoActualUsd || 0;
+          } else {
+            totalCajasBs += c.saldoActualBs || 0;
+            totalCajasUsd += c.saldoActualUsd || 0;
+          }
+        });
+      }
+      setCajaData({ totalBancosBs, totalBancosUsd, totalCajasBs, totalCajasUsd, totalUsd: cData.totalUsd || 0 });
+    })
+    .catch(err => {
+      console.error(err);
+      setDashboardData({ error: true });
+    });
   }, [fechaInicio, fechaFin]);
 
   if (!dashboardData) {
@@ -132,12 +151,12 @@ const item = {
         {/* Tarjeta 3 */}
         <motion.div variants={item} className="rounded-xl border border-border bg-card p-6 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <h3 className="tracking-tight text-sm font-medium">Fondo en Caja</h3>
+            <h3 className="tracking-tight text-sm font-medium">Fondo Global (USD)</h3>
             <Wallet className="h-4 w-4 text-blue-400" />
           </div>
-          <div className="text-2xl font-bold">${dashboardData.fondoCaja.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</div>
+          <div className="text-2xl font-bold">${cajaData?.totalUsd?.toLocaleString("es-VE", { minimumFractionDigits: 2 }) || '0.00'}</div>
           <p className="text-xs text-muted-foreground mt-1">
-            Efectivo disponible en bóveda
+            Efectivo y bancos en divisas
           </p>
         </motion.div>
 
@@ -147,7 +166,7 @@ const item = {
             <h3 className="tracking-tight text-sm font-medium">Margen Neto</h3>
             <Activity className="h-4 w-4 text-purple-400" />
           </div>
-          <div className="text-2xl font-bold">{dashboardData.margenNeto}%</div>
+          <div className="text-2xl font-bold">{dashboardData.margenNeto.toFixed(1)}%</div>
           <p className="text-xs text-emerald-400 flex items-center mt-1">
             <ArrowUpRight className="mr-1 h-3 w-3" />
             +1.2% desde el mes pasado
@@ -228,19 +247,19 @@ const item = {
           <div className="space-y-3">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Total Bancos (Bs)</span>
-              <span className="font-medium">Bs. 0.00</span>
+              <span className="font-medium">Bs. {cajaData?.totalBancosBs?.toLocaleString("es-VE", { minimumFractionDigits: 2 }) || '0.00'}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Total Bancos (USD)</span>
-              <span className="font-medium">$ 0.00</span>
+              <span className="font-medium">$ {cajaData?.totalBancosUsd?.toLocaleString("es-VE", { minimumFractionDigits: 2 }) || '0.00'}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Total Cajas (Bs)</span>
-              <span className="font-medium">Bs. 0.00</span>
+              <span className="text-muted-foreground">Total Cajas Físicas (Bs)</span>
+              <span className="font-medium">Bs. {cajaData?.totalCajasBs?.toLocaleString("es-VE", { minimumFractionDigits: 2 }) || '0.00'}</span>
             </div>
             <div className="flex justify-between text-sm border-t border-border pt-2">
-              <span className="text-muted-foreground">Total Cajas (USD)</span>
-              <span className="font-medium">$ 8,543.00</span>
+              <span className="text-muted-foreground">Total Cajas Físicas (USD)</span>
+              <span className="font-medium">$ {cajaData?.totalCajasUsd?.toLocaleString("es-VE", { minimumFractionDigits: 2 }) || '0.00'}</span>
             </div>
           </div>
         </motion.div>
