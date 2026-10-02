@@ -87,8 +87,11 @@ Es el centro de mando. Recolecta indicadores de salud de la empresa con los sigu
 * **Lógica:** Se auditan las ventas de Odoo para identificar operaciones donde el cliente adeuda una porción (Cashea, créditos corporativos). Estos montos entran a un seguimiento de "Cuentas por Cobrar" directo del módulo de Ingresos/Dashboard.
 
 ### 5. Caja & Bancos
-* **Origen:** PostgreSQL (Local).
-* **Lógica:** Arranca con saldos iniciales (separados en **Bs y Dólares**) tanto para cajas físicas como para cuentas bancarias. Se alimenta de las operaciones diarias (ingresos/egresos) generando un saldo final de flujo de caja.
+* **Origen:** Híbrido (Odoo / PostgreSQL Local).
+* **Lógica Local:** Arranca con saldos iniciales (separados en **Bs y Dólares**) tanto para cajas físicas (Bóveda, Caja Chica) como para cuentas bancarias. Se alimenta de las operaciones diarias (ingresos/egresos) generando un saldo final de flujo de caja.
+* **Bancos como Cajas:** Para permitir a tesorería realizar "ajustes pertinentes", los bancos receptores de ingresos (Zelle, Binance, Banesco Panamá, Bancos Nacionales) se tratan lógicamente como Cajas Locales dentro de la base de datos, habilitando registro de nuevos movimientos (entradas y salidas) para cuadrar su saldo con la realidad.
+* **Integración Odoo POS (Tiempo Real):** Extrae directamente desde Odoo (`pos.config`, `pos.session` y `pos.payment`) todas las sesiones activas y pasadas de Punto de Venta, permitiendo ver el cuadre y saldo actual al vuelo. Para proteger la integridad, los movimientos en cajas POS solo pueden hacerse en Odoo, la app solo lee los datos.
+* **Vista Global (Dashboard Consolidado):** Unifica las tres aristas: (1) Cajas Locales, (2) Bancos, y (3) Cajas Odoo POS, sumando todos sus valores y presentando un patrimonio o flujo total universal de la empresa segmentado entre USD y Bs.
 
 ### 6. Gastos CXP
 * **Origen:** Híbrido (Odoo / Local).
