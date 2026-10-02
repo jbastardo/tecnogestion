@@ -33,18 +33,27 @@ export async function GET(req: Request) {
       totalImpuestos += order.amount_tax;
     });
 
+    const cuentasClave = ['1122001', '1122007', '1141001', '1141003'];
+
     const cxcLines = await odoo.searchRead(
       'account.move.line',
       [
-        ['account_id.account_type', '=', 'asset_receivable'], 
+        ['account_id.code', 'in', cuentasClave], 
         ['parent_state', '=', 'posted'], 
         ['amount_residual', '!=', 0],
         ['date', '>=', fechaInicio],
         ['date', '<=', fechaFin]
       ],
-      ['amount_residual']
+      ['amount_residual', 'amount_residual_currency', 'currency_id']
     );
-    const totalCXC = cxcLines.reduce((acc: number, line: any) => acc + line.amount_residual, 0);
+    const totalCXC = cxcLines.reduce((acc: number, line: any) => {
+      let saldo = line.amount_residual || 0;
+      const currName = line.currency_id && line.currency_id[1] ? line.currency_id[1] : 'VES';
+      if (currName === 'USD' && line.amount_residual_currency) {
+         saldo = line.amount_residual_currency;
+      }
+      return acc + Math.abs(saldo);
+    }, 0);
 
     // 2 & 3. COMPRAS Y GASTOS ODOO (account.move)
     const comprasOdoo = await odoo.searchRead(
@@ -130,9 +139,38 @@ export async function GET(req: Request) {
 
     const totalGastosAgregados = totalNomina + totalServicios + otrosGastos + gastos_odooTotal;
 
-    const graficoMensual = [
-      { name: "Periodo", ingresos: totalVentas, gastos: totalGastosAgregados },
-    ];
+    const currentYear = new Date().getFullYear();
+    const firstDayOfYear = `${currentYear}-01-01`;
+
+    const posOrdersYear = await odoo.searchRead(
+      'pos.order',
+      [['date_order', '>=', firstDayOfYear + ' 00:00:00'], ['state', 'in', ['paid', 'done', 'invoiced']]],
+      ['date_order', 'amount_total']
+    );
+
+    const gastosYear = await odoo.searchRead(
+      'account.move',
+      [['move_type', 'in', ['in_invoice', 'in_receipt']], ['invoice_date', '>=', firstDayOfYear], ['state', '=', 'posted']],
+      ['invoice_date', 'amount_total', 'journal_id']
+    );
+
+    const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    const graficoMensual = meses.map(m => ({ name: m, ingresos: 0, gastos: 0 }));
+
+    posOrdersYear.forEach((o: any) => {
+      if (!o.date_order) return;
+      const m = parseInt(o.date_order.split('-')[1], 10) - 1;
+      if (m >= 0 && m < 12) graficoMensual[m].ingresos += o.amount_total;
+    });
+
+    gastosYear.forEach((g: any) => {
+      if (!g.invoice_date) return;
+      const m = parseInt(g.invoice_date.split('-')[1], 10) - 1;
+      const journal = g.journal_id && g.journal_id[1] ? g.journal_id[1].toLowerCase() : '';
+      if (!journal.includes('factura') && m >= 0 && m < 12) {
+         graficoMensual[m].gastos += g.amount_total; // sumamos gastos (y compras que no son facturas fiscales)
+      }
+    });
     
     return NextResponse.json({
       ingresosTotales: totalVentas,
