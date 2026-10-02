@@ -182,6 +182,40 @@ export async function POST(req: Request) {
       create: { nombre: (body.metodoPago || "N/A").trim() }
     });
 
+    // Guardar en Odoo si se solicitó
+    let odooId = null;
+    if (body.enviarOdoo && body.proveedor_id && body.cuenta_id && body.diario_id) {
+      const odoo = new OdooService({
+        url: process.env.ODOO_URL || 'https://www.onprotec.shop',
+        db: process.env.ODOO_DB || 'binaural-dev-onprotec-16-release-8815487',
+        username: process.env.ODOO_USERNAME || 'juan@onprotec.com',
+        password: process.env.ODOO_PASSWORD || '47028d0d8c58c126b1e9276bec43158fc0c7ee41',
+      });
+      
+      const invoiceData = {
+        move_type: 'in_invoice',
+        partner_id: parseInt(body.proveedor_id),
+        journal_id: parseInt(body.diario_id),
+        invoice_date: body.fecha,
+        ref: body.concepto,
+        invoice_line_ids: [
+          [0, 0, {
+            account_id: parseInt(body.cuenta_id),
+            name: body.concepto,
+            quantity: 1,
+            price_unit: parseFloat(body.totalPagar || 0),
+          }]
+        ]
+      };
+      
+      try {
+        odooId = await odoo.create('account.move', invoiceData);
+      } catch (odooErr: any) {
+        console.error("Error creando en Odoo:", odooErr);
+        return NextResponse.json({ error: "No se pudo crear en Odoo: " + odooErr.message }, { status: 400 });
+      }
+    }
+
     const nuevoGasto = await prisma.gasto.create({
       data: {
         fecha: new Date(body.fecha),
@@ -198,7 +232,7 @@ export async function POST(req: Request) {
       }
     });
 
-    return NextResponse.json({ success: true, gasto: nuevoGasto });
+    return NextResponse.json({ success: true, gasto: nuevoGasto, odooId });
   } catch (error: any) {
     console.error("Error creating gasto:", error);
     return NextResponse.json({ error: "Internal Server Error", details: error.message }, { status: 500 });

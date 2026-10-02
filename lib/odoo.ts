@@ -64,6 +64,10 @@ export class OdooService {
     return this.executeKw(model, 'search_read', [domain], kwargs);
   }
 
+  async create(model: string, vals: any): Promise<number> {
+    return this.executeKw(model, 'create', [vals]);
+  }
+
   // --- Odoo Specific Helpers ---
 
   async getFacturas(fechaInicio: string, fechaFin: string, isPurchase = false) {
