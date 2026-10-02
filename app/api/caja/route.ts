@@ -1,7 +1,15 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { OdooService } from '@/lib/odoo';
 
 const prisma = new PrismaClient();
+
+const odoo = new OdooService({
+  url: process.env.ODOO_URL || 'https://www.onprotec.shop',
+  db: process.env.ODOO_DB || 'binaural-dev-onprotec-16-release-8815487',
+  username: process.env.ODOO_USERNAME || 'juan@onprotec.com',
+  password: process.env.ODOO_PASSWORD || '47028d0d8c58c126b1e9276bec43158fc0c7ee41',
+});
 
 export async function GET(req: Request) {
   try {
@@ -9,6 +17,102 @@ export async function GET(req: Request) {
     const cajaId = searchParams.get('cajaId') || 'boveda';
     const action = searchParams.get('action'); // 'resumen', 'movimientos', 'cuadres'
     
+    // --- LÓGICA PARA CAJAS ODOO (POS) ---
+    if (cajaId.startsWith('odoo_')) {
+      const config_id = parseInt(cajaId.split('_')[1]);
+      
+      if (action === 'resumen') {
+        const sessions = await odoo.searchRead(
+          'pos.session',
+          [['config_id', '=', config_id]],
+          ['name', 'state', 'start_at', 'stop_at', 'cash_register_balance_start', 'cash_register_balance_end_real', 'cash_register_difference'],
+          0, 1,
+          'id desc'
+        );
+        const cajaAbierta = sessions[0];
+        if (!cajaAbierta) {
+           return NextResponse.json({ estado: 'CERRADA', cajaActiva: null, resumen: null });
+        }
+
+        const isAbierta = cajaAbierta.state === 'opened' || cajaAbierta.state === 'closing_control';
+        
+        const payments = await odoo.searchRead('pos.payment', [['session_id', '=', cajaAbierta.id]], ['amount', 'payment_method_id']);
+        
+        let ingresosUsd = 0;
+        let ingresosBs = 0;
+        let egresosUsd = 0;
+        let egresosBs = 0;
+        
+        payments.forEach((p: any) => {
+           const method = p.payment_method_id && p.payment_method_id[1] ? p.payment_method_id[1].toLowerCase() : '';
+           const isUsd = method.includes('dolar') || method.includes('usd') || method.includes('divisa') || method.includes('zelle') || method.includes('binance') || method.includes('usdt');
+           if (isUsd) {
+              if (p.amount > 0) ingresosUsd += p.amount;
+              else egresosUsd += Math.abs(p.amount);
+           } else {
+              if (p.amount > 0) ingresosBs += p.amount;
+              else egresosBs += Math.abs(p.amount);
+           }
+        });
+
+        return NextResponse.json({
+          estado: isAbierta ? 'ABIERTA' : 'CERRADA',
+          cajaAbierta: {
+            saldoAperturaBs: cajaAbierta.cash_register_balance_start || 0,
+            saldoAperturaUsd: 0,
+            fechaApertura: cajaAbierta.start_at,
+          },
+          resumen: {
+            ingresosUsd, egresosUsd, ingresosBs, egresosBs,
+            saldoActualUsd: ingresosUsd - egresosUsd,
+            saldoActualBs: (cajaAbierta.cash_register_balance_start || 0) + ingresosBs - egresosBs,
+          }
+        });
+      }
+
+      if (action === 'movimientos') {
+        const sessions = await odoo.searchRead('pos.session', [['config_id', '=', config_id]], ['id'], 0, 1, 'id desc');
+        if (!sessions.length) return NextResponse.json({ movimientos: [] });
+        const payments = await odoo.searchRead('pos.payment', [['session_id', '=', sessions[0].id]], ['amount', 'payment_method_id', 'payment_date', 'pos_order_id']);
+        
+        const movimientos = payments.map((p: any) => {
+           const method = p.payment_method_id && p.payment_method_id[1] ? p.payment_method_id[1].toLowerCase() : '';
+           const isUsd = method.includes('dolar') || method.includes('usd') || method.includes('divisa') || method.includes('zelle') || method.includes('binance') || method.includes('usdt');
+           return {
+              id: p.id,
+              fecha: p.payment_date,
+              concepto: `Orden ${p.pos_order_id ? p.pos_order_id[1] : ''} - ${p.payment_method_id ? p.payment_method_id[1] : ''}`,
+              montoUsd: isUsd ? Math.abs(p.amount) : 0,
+              montoBs: !isUsd ? Math.abs(p.amount) : 0,
+              tipo: p.amount >= 0 ? 'INGRESO' : 'EGRESO'
+           };
+        });
+        return NextResponse.json({ movimientos });
+      }
+
+      if (action === 'cuadres') {
+        const sessions = await odoo.searchRead(
+          'pos.session',
+          [['config_id', '=', config_id], ['state', '=', 'closed']],
+          ['name', 'state', 'start_at', 'stop_at', 'cash_register_balance_start', 'cash_register_balance_end_real', 'cash_register_difference'],
+          0, 50,
+          'stop_at desc'
+        );
+        const cuadres = sessions.map((s: any) => ({
+          id: s.id,
+          fechaApertura: s.start_at,
+          fechaCierre: s.stop_at,
+          saldoFisicoUsd: 0,
+          saldoSistemaUsd: 0,
+          saldoFisicoBs: s.cash_register_balance_end_real,
+          saldoSistemaBs: (s.cash_register_balance_end_real || 0) - (s.cash_register_difference || 0),
+          observaciones: `Sesión: ${s.name}`,
+        }));
+        return NextResponse.json({ cuadres });
+      }
+    }
+
+    // --- LÓGICA PARA CAJAS LOCALES (PRISMA) ---
     // Obtener la caja activa del día o la última abierta
     const cajaAbierta = await prisma.aperturaCierreCaja.findFirst({
       where: { cajaId, estado: 'ABIERTA' },
@@ -86,6 +190,10 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { action, cajaId } = body;
 
+    if (cajaId.startsWith('odoo_')) {
+      return NextResponse.json({ error: 'No se puede modificar una caja POS de Odoo desde aquí' }, { status: 400 });
+    }
+
     if (action === 'apertura') {
       // Verificar que no haya una caja abierta
       const cajaAbierta = await prisma.aperturaCierreCaja.findFirst({
@@ -107,8 +215,6 @@ export async function POST(req: Request) {
     }
 
     if (action === 'movimiento') {
-      // Debe haber una caja abierta para registrar un movimiento? 
-      // Para la caja chica sí, pero vamos a dejarlo flexible por si acaso.
       const nuevoMovimiento = await prisma.movimientoCaja.create({
         data: {
           cajaId,

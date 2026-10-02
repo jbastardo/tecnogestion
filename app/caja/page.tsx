@@ -13,6 +13,8 @@ export default function CajaPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  const [odooCajas, setOdooCajas] = useState<any[]>([]);
+  
   // Modal states
   const [isAperturaOpen, setIsAperturaOpen] = useState(false);
   const [isMovimientoOpen, setIsMovimientoOpen] = useState(false);
@@ -35,6 +37,15 @@ export default function CajaPage() {
     fetchData();
   }, [cajaActiva, activeTab]);
 
+  useEffect(() => {
+    fetch('/api/caja/odoo-boxes')
+      .then(res => res.json())
+      .then(data => {
+        if (data.configs) setOdooCajas(data.configs);
+      })
+      .catch(console.error);
+  }, []);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -45,15 +56,24 @@ export default function CajaPage() {
         <div className="flex gap-2">
           <select 
             value={cajaActiva}
-            onChange={(e) => setCajaActiva(e.target.value as "boveda" | "caja_chica")}
+            onChange={(e) => setCajaActiva(e.target.value as any)}
             className="bg-card border border-border text-sm rounded-lg px-3 py-2 outline-none focus:border-primary font-medium text-foreground"
           >
-            <option value="boveda">Bóveda Principal (POS)</option>
-            <option value="caja_chica">Caja Chica (Admin)</option>
+            <optgroup label="Cajas Locales">
+              <option value="boveda">Bóveda Principal (Local)</option>
+              <option value="caja_chica">Caja Chica (Admin)</option>
+            </optgroup>
+            {odooCajas.length > 0 && (
+              <optgroup label="Cajas POS (Odoo)">
+                {odooCajas.map((c) => (
+                  <option key={c.id} value={`odoo_${c.id}`}>{c.name}</option>
+                ))}
+              </optgroup>
+            )}
           </select>
           <button 
             onClick={() => setIsMovimientoOpen(true)}
-            disabled={data?.estado === 'CERRADA'}
+            disabled={data?.estado === 'CERRADA' || cajaActiva.startsWith('odoo_')}
             className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-2 disabled:opacity-50"
           >
             <Plus size={16} />
@@ -61,7 +81,7 @@ export default function CajaPage() {
           </button>
           <button 
             onClick={() => setIsCerrarOpen(true)}
-            disabled={data?.estado === 'CERRADA'}
+            disabled={data?.estado === 'CERRADA' || cajaActiva.startsWith('odoo_')}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50"
           >
             <FileText size={16} />
@@ -114,13 +134,18 @@ export default function CajaPage() {
                 </div>
              </div>
              
-             {data?.estado === 'CERRADA' && (
+             {data?.estado === 'CERRADA' && !cajaActiva.startsWith('odoo_') && (
                <button 
                  onClick={() => setIsAperturaOpen(true)}
                  className="text-sm border border-border bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 px-4 py-2 rounded-lg transition-colors font-semibold"
                >
                  Abrir Caja
                </button>
+             )}
+             {cajaActiva.startsWith('odoo_') && (
+               <div className="text-sm text-muted-foreground flex flex-col items-end">
+                 <span>Las cajas Odoo de POS se administran en Odoo.</span>
+               </div>
              )}
           </div>
 
