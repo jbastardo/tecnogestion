@@ -8,7 +8,7 @@ import { CerrarCajaModal } from "./CerrarCajaModal";
 
 export default function CajaPage() {
   const [activeTab, setActiveTab] = useState<"resumen" | "movimientos" | "cuadres">("resumen");
-  const [cajaActiva, setCajaActiva] = useState<"boveda" | "caja_chica">("boveda");
+  const [cajaActiva, setCajaActiva] = useState<any>("global");
   
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -23,9 +23,15 @@ export default function CajaPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/caja?cajaId=${cajaActiva}&action=${activeTab}`);
-      const json = await res.json();
-      setData(json);
+      if (cajaActiva === 'global') {
+        const res = await fetch(`/api/caja/global`);
+        const json = await res.json();
+        setData({ ...json, isGlobal: true });
+      } else {
+        const res = await fetch(`/api/caja?cajaId=${cajaActiva}&action=${activeTab}`);
+        const json = await res.json();
+        setData(json);
+      }
     } catch (error) {
       console.error("Error fetching caja:", error);
     } finally {
@@ -59,9 +65,16 @@ export default function CajaPage() {
             onChange={(e) => setCajaActiva(e.target.value as any)}
             className="bg-card border border-border text-sm rounded-lg px-3 py-2 outline-none focus:border-primary font-medium text-foreground"
           >
+            <option value="global">Resumen Global (Todas)</option>
             <optgroup label="Cajas Locales">
               <option value="boveda">Bóveda Principal (Local)</option>
               <option value="caja_chica">Caja Chica (Admin)</option>
+            </optgroup>
+            <optgroup label="Bancos (Ingresos)">
+              <option value="banco_nacional">Bancos Nacionales (Bs)</option>
+              <option value="banco_zelle">Banco Zelle (USD)</option>
+              <option value="banco_binance">Banco Binance (USD)</option>
+              <option value="banco_panama">Banco Banesco Panamá (USD)</option>
             </optgroup>
             {odooCajas.length > 0 && (
               <optgroup label="Cajas POS (Odoo)">
@@ -73,7 +86,7 @@ export default function CajaPage() {
           </select>
           <button 
             onClick={() => setIsMovimientoOpen(true)}
-            disabled={data?.estado === 'CERRADA' || cajaActiva.startsWith('odoo_')}
+            disabled={cajaActiva === 'global' || data?.estado === 'CERRADA' || cajaActiva.startsWith('odoo_')}
             className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-2 disabled:opacity-50"
           >
             <Plus size={16} />
@@ -81,7 +94,7 @@ export default function CajaPage() {
           </button>
           <button 
             onClick={() => setIsCerrarOpen(true)}
-            disabled={data?.estado === 'CERRADA' || cajaActiva.startsWith('odoo_')}
+            disabled={cajaActiva === 'global' || data?.estado === 'CERRADA' || cajaActiva.startsWith('odoo_')}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50"
           >
             <FileText size={16} />
@@ -114,6 +127,50 @@ export default function CajaPage() {
 
       {loading ? (
         <div className="text-center text-muted-foreground p-8">Cargando...</div>
+      ) : activeTab === "resumen" && data?.isGlobal ? (
+        <div className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+               <h3 className="text-sm font-medium text-muted-foreground">Total Global USD</h3>
+               <div className="text-3xl font-bold text-emerald-500 mt-2">${(data.totalUsd || 0).toFixed(2)}</div>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+               <h3 className="text-sm font-medium text-muted-foreground">Total Global Bs</h3>
+               <div className="text-3xl font-bold mt-2">Bs. {(data.totalBs || 0).toFixed(2)}</div>
+            </div>
+          </div>
+          <h3 className="text-lg font-bold">Desglose por Caja / Banco</h3>
+          <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+             <table className="w-full text-sm text-left">
+               <thead className="text-xs text-muted-foreground bg-muted/50 uppercase border-b border-border">
+                 <tr>
+                   <th className="px-4 py-3 font-medium">Nombre</th>
+                   <th className="px-4 py-3 font-medium text-right">Saldo USD</th>
+                   <th className="px-4 py-3 font-medium text-right">Saldo Bs</th>
+                 </tr>
+               </thead>
+               <tbody className="divide-y divide-border">
+                 {data.cajas?.map((c: any) => (
+                   <tr key={c.id} className="hover:bg-muted/30 transition-colors">
+                     <td className="px-4 py-3 font-medium flex items-center gap-2">
+                        {c.name}
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted border border-border">{c.type}</span>
+                     </td>
+                     <td className="px-4 py-3 text-right font-bold text-emerald-500">${c.saldoActualUsd.toFixed(2)}</td>
+                     <td className="px-4 py-3 text-right font-medium">Bs. {c.saldoActualBs.toFixed(2)}</td>
+                   </tr>
+                 ))}
+                 {(!data.cajas || data.cajas.length === 0) && (
+                    <tr>
+                      <td colSpan={3} className="px-4 py-4 text-center text-muted-foreground">
+                        No hay cajas ni bancos abiertos.
+                      </td>
+                    </tr>
+                 )}
+               </tbody>
+             </table>
+          </div>
+        </div>
       ) : activeTab === "resumen" && (
         <div className="space-y-6">
           
@@ -189,7 +246,11 @@ export default function CajaPage() {
 
       {!loading && activeTab === "movimientos" && (
         <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
-          {data?.movimientos?.length === 0 ? (
+          {cajaActiva === 'global' ? (
+             <div className="p-8 text-center text-muted-foreground">
+               Por favor selecciona una caja específica para ver sus movimientos.
+             </div>
+          ) : data?.movimientos?.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">
               Aún no hay movimientos registrados para esta caja.
             </div>
@@ -230,7 +291,11 @@ export default function CajaPage() {
 
       {!loading && activeTab === "cuadres" && (
         <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
-          {data?.cuadres?.length === 0 ? (
+          {cajaActiva === 'global' ? (
+             <div className="p-8 text-center text-muted-foreground">
+               Por favor selecciona una caja específica para ver sus cuadres.
+             </div>
+          ) : data?.cuadres?.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">
               Aún no hay cuadres registrados.
             </div>
