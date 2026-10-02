@@ -30,7 +30,7 @@ export async function GET(request: Request) {
         ['account_id.code', 'in', cuentasClave],
         ['amount_residual', '!=', 0]
       ],
-      ['name', 'date', 'account_id', 'amount_residual', 'amount_residual_currency', 'partner_id', 'move_id', 'currency_id']
+      ['name', 'date', 'account_id', 'amount_residual', 'amount_residual_currency', 'partner_id', 'move_id', 'currency_id', 'journal_id']
     );
 
     const formattedCuentas = lines.map((line: any) => {
@@ -52,6 +52,10 @@ export async function GET(request: Request) {
         saldo = line.amount_residual_currency;
       }
 
+      const journalName = (line.journal_id && line.journal_id[1]) ? line.journal_id[1].toLowerCase() : "";
+      const isFactura = journalName.includes("factura");
+      const tipoOperacion = isFactura ? "Factura Fiscal" : "No Fiscal";
+
       return {
         id: line.id.toString(),
         fecha: line.date || "S/F",
@@ -60,6 +64,7 @@ export async function GET(request: Request) {
         concepto: concepto,
         moneda: moneda,
         saldo: saldo,
+        tipoOperacion: tipoOperacion,
       };
     });
 

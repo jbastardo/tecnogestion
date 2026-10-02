@@ -10,6 +10,7 @@ export default function CxcPage() {
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>({ key: 'fecha', direction: 'desc' });
   const [filtroConcepto, setFiltroConcepto] = useState("Todos");
   const [filtroMoneda, setFiltroMoneda] = useState("Todas");
+  const [filtroOperacion, setFiltroOperacion] = useState("Todas");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 50;
 
@@ -39,7 +40,7 @@ export default function CxcPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filtroConcepto, filtroMoneda, fechaInicio, fechaFin]);
+  }, [searchTerm, filtroConcepto, filtroMoneda, filtroOperacion, fechaInicio, fechaFin]);
 
   const formatCurrency = (val: any, moneda: string = "USD") => {
     const symbol = moneda === 'VES' ? 'Bs. ' : '$ ';
@@ -60,8 +61,9 @@ export default function CxcPage() {
                           
     const matchesConcepto = filtroConcepto === "Todos" || cuenta.concepto === filtroConcepto;
     const matchesMoneda = filtroMoneda === "Todas" || cuenta.moneda === filtroMoneda;
+    const matchesOperacion = filtroOperacion === "Todas" || cuenta.tipoOperacion === filtroOperacion;
     
-    return matchesSearch && matchesConcepto && matchesMoneda;
+    return matchesSearch && matchesConcepto && matchesMoneda && matchesOperacion;
   });
 
   const totales = filteredCuentas.reduce((acc, curr) => {
@@ -151,6 +153,15 @@ export default function CxcPage() {
               <option value="USD">Solo USD</option>
               <option value="VES">Solo Bs</option>
             </select>
+            <select
+              value={filtroOperacion}
+              onChange={(e) => setFiltroOperacion(e.target.value)}
+              className="bg-background border border-border rounded-lg px-2 py-2 text-sm focus:outline-none"
+            >
+              <option value="Todas">Todas las Operaciones</option>
+              <option value="Factura Fiscal">Factura Fiscal</option>
+              <option value="No Fiscal">No Fiscal</option>
+            </select>
             <div className="flex items-center gap-2 bg-background border border-border rounded-lg px-2 py-1">
               <span className="text-sm text-muted-foreground">Desde:</span>
               <input 
@@ -196,6 +207,11 @@ export default function CxcPage() {
                     Concepto <ArrowUpDown size={14} className={sortConfig?.key === 'concepto' ? 'text-primary' : 'opacity-50'} />
                   </button>
                 </th>
+                <th className="px-4 py-3 font-medium text-left align-top">
+                  <button onClick={() => handleSort('tipoOperacion')} className="flex items-center gap-1 hover:text-foreground transition-colors w-full">
+                    Operación <ArrowUpDown size={14} className={sortConfig?.key === 'tipoOperacion' ? 'text-primary' : 'opacity-50'} />
+                  </button>
+                </th>
                 <th className="px-4 py-3 font-medium text-center align-top">
                   <button onClick={() => handleSort('moneda')} className="flex items-center justify-center gap-1 hover:text-foreground transition-colors w-full">
                     Moneda <ArrowUpDown size={14} className={sortConfig?.key === 'moneda' ? 'text-primary' : 'opacity-50'} />
@@ -211,13 +227,13 @@ export default function CxcPage() {
             <tbody className="divide-y divide-border">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
                     Cargando cuentas por cobrar desde Odoo...
                   </td>
                 </tr>
               ) : filteredCuentas.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
                     No hay cuentas pendientes para los filtros seleccionados.
                   </td>
                 </tr>
@@ -235,6 +251,13 @@ export default function CxcPage() {
                         'bg-slate-500/10 text-slate-500'
                       }`}>
                         {cuenta.concepto}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-left">
+                      <span className={`px-2 py-1 rounded-md text-xs font-medium ${
+                        cuenta.tipoOperacion === 'Factura Fiscal' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-slate-500/10 text-slate-500'
+                      }`}>
+                        {cuenta.tipoOperacion}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center">{cuenta.moneda}</td>
