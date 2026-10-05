@@ -6,6 +6,7 @@ export function NuevoMovimientoModal({ isOpen, onClose, onSave, cajaActiva }: an
   const [concepto, setConcepto] = useState("");
   const [montoUsd, setMontoUsd] = useState("0");
   const [montoBs, setMontoBs] = useState("0");
+  const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
   const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
@@ -24,7 +25,8 @@ export function NuevoMovimientoModal({ isOpen, onClose, onSave, cajaActiva }: an
           tipo,
           concepto,
           montoUsd,
-          montoBs
+          montoBs,
+          fecha
         })
       });
       
@@ -76,6 +78,16 @@ export function NuevoMovimientoModal({ isOpen, onClose, onSave, cajaActiva }: an
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Fecha</label>
+              <input 
+                type="date" 
+                required
+                value={fecha}
+                onChange={(e) => setFecha(e.target.value)}
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
+              />
+            </div>
             <div>
               <label className="block text-sm font-medium mb-1">Monto (Dólares $)</label>
               <input 

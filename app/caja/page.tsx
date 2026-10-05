@@ -10,6 +10,9 @@ export default function CajaPage() {
   const [activeTab, setActiveTab] = useState<"resumen" | "movimientos" | "cuadres">("resumen");
   const [cajaActiva, setCajaActiva] = useState<any>("global");
   
+  const [fechaInicio, setFechaInicio] = useState<string>(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]);
+  const [fechaFin, setFechaFin] = useState<string>(new Date().toISOString().split('T')[0]);
+  
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -28,7 +31,7 @@ export default function CajaPage() {
         const json = await res.json();
         setData({ ...json, isGlobal: true });
       } else {
-        const res = await fetch(`/api/caja?cajaId=${cajaActiva}&action=${activeTab}`);
+        const res = await fetch(`/api/caja?cajaId=${cajaActiva}&action=${activeTab}&inicio=${fechaInicio}&fin=${fechaFin}`);
         const json = await res.json();
         setData(json);
       }
@@ -41,7 +44,7 @@ export default function CajaPage() {
 
   useEffect(() => {
     fetchData();
-  }, [cajaActiva, activeTab]);
+  }, [cajaActiva, activeTab, fechaInicio, fechaFin]);
 
   useEffect(() => {
     fetch('/api/caja/odoo-boxes')
@@ -84,6 +87,22 @@ export default function CajaPage() {
               </optgroup>
             )}
           </select>
+          {(activeTab === 'movimientos' || activeTab === 'cuadres') && cajaActiva !== 'global' && (
+            <div className="flex gap-2">
+              <input 
+                type="date"
+                value={fechaInicio}
+                onChange={e => setFechaInicio(e.target.value)}
+                className="bg-card border border-border text-sm rounded-lg px-3 py-2 outline-none focus:border-primary font-medium text-foreground"
+              />
+              <input 
+                type="date"
+                value={fechaFin}
+                onChange={e => setFechaFin(e.target.value)}
+                className="bg-card border border-border text-sm rounded-lg px-3 py-2 outline-none focus:border-primary font-medium text-foreground"
+              />
+            </div>
+          )}
           <button 
             onClick={() => setIsMovimientoOpen(true)}
             disabled={cajaActiva === 'global' || data?.estado === 'CERRADA' || cajaActiva.startsWith('odoo_')}

@@ -16,6 +16,8 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const cajaId = searchParams.get('cajaId') || 'boveda';
     const action = searchParams.get('action'); // 'resumen', 'movimientos', 'cuadres'
+    const fechaInicio = searchParams.get('inicio');
+    const fechaFin = searchParams.get('fin');
     
     // --- LÓGICA PARA CAJAS ODOO (POS) ---
     if (cajaId.startsWith('odoo_')) {
@@ -71,9 +73,15 @@ export async function GET(req: Request) {
       }
 
       if (action === 'movimientos') {
-        const sessions = await odoo.searchRead('pos.session', [['config_id', '=', config_id]], ['id'], 0, 1, 'id desc');
+        const domain: any[] = [['config_id', '=', config_id]];
+        if (fechaInicio && fechaFin) {
+            domain.push(['start_at', '>=', fechaInicio + ' 00:00:00']);
+            domain.push(['start_at', '<=', fechaFin + ' 23:59:59']);
+        }
+        const sessions = await odoo.searchRead('pos.session', domain, ['id'], 0, 50, 'id desc');
         if (!sessions.length) return NextResponse.json({ movimientos: [] });
-        const payments = await odoo.searchRead('pos.payment', [['session_id', '=', sessions[0].id]], ['amount', 'payment_method_id', 'payment_date', 'pos_order_id']);
+        const sessionIds = sessions.map((s: any) => s.id);
+        const payments = await odoo.searchRead('pos.payment', [['session_id', 'in', sessionIds]], ['amount', 'payment_method_id', 'payment_date', 'pos_order_id']);
         
         const movimientos = payments.map((p: any) => {
            const method = p.payment_method_id && p.payment_method_id[1] ? p.payment_method_id[1].toLowerCase() : '';
@@ -91,9 +99,14 @@ export async function GET(req: Request) {
       }
 
       if (action === 'cuadres') {
+        const domain: any[] = [['config_id', '=', config_id], ['state', '=', 'closed']];
+        if (fechaInicio && fechaFin) {
+            domain.push(['stop_at', '>=', fechaInicio + ' 00:00:00']);
+            domain.push(['stop_at', '<=', fechaFin + ' 23:59:59']);
+        }
         const sessions = await odoo.searchRead(
           'pos.session',
-          [['config_id', '=', config_id], ['state', '=', 'closed']],
+          domain,
           ['name', 'state', 'start_at', 'stop_at', 'cash_register_balance_start', 'cash_register_balance_end_real', 'cash_register_difference'],
           0, 50,
           'stop_at desc'
@@ -160,8 +173,15 @@ export async function GET(req: Request) {
     }
 
     if (action === 'movimientos') {
+      const whereClause: any = { cajaId };
+      if (fechaInicio && fechaFin) {
+         whereClause.fecha = {
+            gte: new Date(fechaInicio + 'T00:00:00.000Z'),
+            lte: new Date(fechaFin + 'T23:59:59.999Z')
+         };
+      }
       const movimientos = await prisma.movimientoCaja.findMany({
-        where: { cajaId },
+        where: whereClause,
         orderBy: { fecha: 'desc' },
         take: 100
       });
@@ -169,8 +189,15 @@ export async function GET(req: Request) {
     }
 
     if (action === 'cuadres') {
+      const whereClause: any = { cajaId, estado: 'CERRADA' };
+      if (fechaInicio && fechaFin) {
+         whereClause.fechaCierre = {
+            gte: new Date(fechaInicio + 'T00:00:00.000Z'),
+            lte: new Date(fechaFin + 'T23:59:59.999Z')
+         };
+      }
       const cuadres = await prisma.aperturaCierreCaja.findMany({
-        where: { cajaId, estado: 'CERRADA' },
+        where: whereClause,
         orderBy: { fechaCierre: 'desc' },
         take: 50
       });
@@ -222,6 +249,7 @@ export async function POST(req: Request) {
           concepto: body.concepto,
           montoUsd: parseFloat(body.montoUsd || 0),
           montoBs: parseFloat(body.montoBs || 0),
+          fecha: body.fecha ? new Date(body.fecha + 'T12:00:00.000Z') : new Date(),
         }
       });
       return NextResponse.json({ success: true, movimiento: nuevoMovimiento });
