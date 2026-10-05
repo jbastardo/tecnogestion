@@ -174,19 +174,30 @@ export async function GET(req: Request) {
       ['date_order', 'amount_total', 'amount_tax', 'margin']
     );
 
-    const gastosYear = await odoo.searchRead(
-      'account.move',
-      [['move_type', 'in', ['in_invoice', 'in_receipt']], ['invoice_date', '>=', firstDayOfYear], ['state', '=', 'posted']],
-      ['invoice_date', 'amount_total', 'journal_id']
+    const gastosLineasYear = await odoo.searchRead(
+      'account.move.line',
+      [
+        ['date', '>=', firstDayOfYear],
+        ['parent_state', '=', 'posted'],
+        '|',
+        ['account_id.code', '=like', '6%'],
+        ['account_id.code', '=like', '7%']
+      ],
+      ['date', 'debit', 'credit']
     );
 
     const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
     const graficoMensual = meses.map(m => ({ name: m, ingresos: 0, gastos: 0 }));
 
     const targetMonth = new Date(fechaFin).getMonth();
+    const prevMonth = targetMonth === 0 ? 11 : targetMonth - 1;
     let ventasMesTarget = 0;
     let cogsMesTarget = 0;
     let gastosMesOdooTarget = 0;
+
+    let ventasPrev = 0;
+    let cogsPrev = 0;
+    let gastosOdooPrev = 0;
 
     posOrdersYear.forEach((o: any) => {
       if (!o.date_order) return;
@@ -197,18 +208,24 @@ export async function GET(req: Request) {
            const amount_untaxed = (o.amount_total || 0) - (o.amount_tax || 0);
            ventasMesTarget += amount_untaxed;
            cogsMesTarget += amount_untaxed - (o.margin || 0);
+         } else if (m === prevMonth) {
+           const amount_untaxed = (o.amount_total || 0) - (o.amount_tax || 0);
+           ventasPrev += amount_untaxed;
+           cogsPrev += amount_untaxed - (o.margin || 0);
          }
       }
     });
 
-    gastosYear.forEach((g: any) => {
-      if (!g.invoice_date) return;
-      const m = parseInt(g.invoice_date.split('-')[1], 10) - 1;
-      const journal = g.journal_id && g.journal_id[1] ? g.journal_id[1].toLowerCase() : '';
-      if (!journal.includes('factura') && m >= 0 && m < 12) {
-         graficoMensual[m].gastos += g.amount_total; // sumamos gastos (y compras que no son facturas fiscales)
+    gastosLineasYear.forEach((l: any) => {
+      if (!l.date) return;
+      const m = parseInt(l.date.split('-')[1], 10) - 1;
+      if (m >= 0 && m < 12) {
+         const gasto = (l.debit || 0) - (l.credit || 0);
+         graficoMensual[m].gastos += gasto;
          if (m === targetMonth) {
-           gastosMesOdooTarget += g.amount_total;
+           gastosMesOdooTarget += gasto;
+         } else if (m === prevMonth) {
+           gastosOdooPrev += gasto;
          }
       }
     });
@@ -227,8 +244,26 @@ export async function GET(req: Request) {
     const gastosMesPrismaTarget = gastosLocalMes.reduce((sum, g) => sum + g.totalAPagar, 0);
     const totalGastosMes = gastosMesOdooTarget + gastosMesPrismaTarget;
     
+    // Obtener gastos locales PREVIOS
+    const firstDayOfPrevMonth = new Date(new Date(fechaFin).getFullYear() - (targetMonth === 0 ? 1 : 0), prevMonth, 1);
+    const lastDayOfPrevMonth = new Date(new Date(fechaFin).getFullYear() - (targetMonth === 0 ? 1 : 0), prevMonth + 1, 0);
+    const gastosLocalPrev = await prisma.gasto.findMany({
+      where: {
+        fecha: {
+          gte: firstDayOfPrevMonth,
+          lte: lastDayOfPrevMonth
+        }
+      }
+    });
+    const gastosMesPrismaPrev = gastosLocalPrev.reduce((sum, g) => sum + g.totalAPagar, 0);
+    const totalGastosPrev = gastosOdooPrev + gastosMesPrismaPrev;
+
     const margenNetoMensual = ventasMesTarget > 0 
       ? ((ventasMesTarget - cogsMesTarget - totalGastosMes) / ventasMesTarget) * 100 
+      : 0;
+
+    const margenNetoPrevio = ventasPrev > 0 
+      ? ((ventasPrev - cogsPrev - totalGastosPrev) / ventasPrev) * 100 
       : 0;
     
     return NextResponse.json({
@@ -236,6 +271,7 @@ export async function GET(req: Request) {
       gastosTotales: totalGastosAgregados,
       fondoCaja: 0, // Fetch in frontend via /api/caja/global
       margenNeto: margenNetoMensual,
+      margenNetoPrevio: margenNetoPrevio,
       graficoMensual,
       graficoMetodosPago: [], 
       detalles: {

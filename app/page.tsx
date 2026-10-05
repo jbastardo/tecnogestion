@@ -167,9 +167,9 @@ const item = {
             <Activity className="h-4 w-4 text-purple-400" />
           </div>
           <div className="text-2xl font-bold">{dashboardData.margenNeto.toFixed(1)}%</div>
-          <p className="text-xs text-emerald-400 flex items-center mt-1">
-            <ArrowUpRight className="mr-1 h-3 w-3" />
-            +1.2% desde el mes pasado
+          <p className={`text-xs flex items-center mt-1 ${(dashboardData.margenNeto - dashboardData.margenNetoPrevio) >= 0 ? 'text-emerald-400' : 'text-destructive'}`}>
+            {(dashboardData.margenNeto - dashboardData.margenNetoPrevio) >= 0 ? <ArrowUpRight className="mr-1 h-3 w-3" /> : <ArrowDownRight className="mr-1 h-3 w-3" />}
+            {((dashboardData.margenNeto - dashboardData.margenNetoPrevio) > 0 ? '+' : '')}{(dashboardData.margenNeto - dashboardData.margenNetoPrevio).toFixed(1)}% desde el mes pasado
           </p>
         </motion.div>
       </motion.div>
