@@ -163,7 +163,7 @@ const item = {
         {/* Tarjeta 4 */}
         <motion.div variants={item} className="rounded-xl border border-border bg-card p-6 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <h3 className="tracking-tight text-sm font-medium">Margen Neto</h3>
+            <h3 className="tracking-tight text-sm font-medium">Margen Neto Mensual</h3>
             <Activity className="h-4 w-4 text-purple-400" />
           </div>
           <div className="text-2xl font-bold">{dashboardData.margenNeto.toFixed(1)}%</div>

@@ -171,7 +171,7 @@ export async function GET(req: Request) {
     const posOrdersYear = await odoo.searchRead(
       'pos.order',
       [['date_order', '>=', firstDayOfYear + ' 00:00:00'], ['state', 'in', ['paid', 'done', 'invoiced']]],
-      ['date_order', 'amount_total']
+      ['date_order', 'amount_total', 'amount_tax', 'margin']
     );
 
     const gastosYear = await odoo.searchRead(
@@ -183,10 +183,22 @@ export async function GET(req: Request) {
     const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
     const graficoMensual = meses.map(m => ({ name: m, ingresos: 0, gastos: 0 }));
 
+    const targetMonth = new Date(fechaFin).getMonth();
+    let ventasMesTarget = 0;
+    let cogsMesTarget = 0;
+    let gastosMesOdooTarget = 0;
+
     posOrdersYear.forEach((o: any) => {
       if (!o.date_order) return;
       const m = parseInt(o.date_order.split('-')[1], 10) - 1;
-      if (m >= 0 && m < 12) graficoMensual[m].ingresos += o.amount_total;
+      if (m >= 0 && m < 12) {
+         graficoMensual[m].ingresos += o.amount_total;
+         if (m === targetMonth) {
+           const amount_untaxed = (o.amount_total || 0) - (o.amount_tax || 0);
+           ventasMesTarget += amount_untaxed;
+           cogsMesTarget += amount_untaxed - (o.margin || 0);
+         }
+      }
     });
 
     gastosYear.forEach((g: any) => {
@@ -195,14 +207,35 @@ export async function GET(req: Request) {
       const journal = g.journal_id && g.journal_id[1] ? g.journal_id[1].toLowerCase() : '';
       if (!journal.includes('factura') && m >= 0 && m < 12) {
          graficoMensual[m].gastos += g.amount_total; // sumamos gastos (y compras que no son facturas fiscales)
+         if (m === targetMonth) {
+           gastosMesOdooTarget += g.amount_total;
+         }
       }
     });
+    
+    // Obtener gastos locales de TODO el mes objetivo para el margen
+    const firstDayOfTargetMonth = new Date(new Date(fechaFin).getFullYear(), targetMonth, 1);
+    const lastDayOfTargetMonth = new Date(new Date(fechaFin).getFullYear(), targetMonth + 1, 0);
+    const gastosLocalMes = await prisma.gasto.findMany({
+      where: {
+        fecha: {
+          gte: firstDayOfTargetMonth,
+          lte: lastDayOfTargetMonth
+        }
+      }
+    });
+    const gastosMesPrismaTarget = gastosLocalMes.reduce((sum, g) => sum + g.totalAPagar, 0);
+    const totalGastosMes = gastosMesOdooTarget + gastosMesPrismaTarget;
+    
+    const margenNetoMensual = ventasMesTarget > 0 
+      ? ((ventasMesTarget - cogsMesTarget - totalGastosMes) / ventasMesTarget) * 100 
+      : 0;
     
     return NextResponse.json({
       ingresosTotales: totalVentas,
       gastosTotales: totalGastosAgregados,
       fondoCaja: 0, // Fetch in frontend via /api/caja/global
-      margenNeto: totalVentas > 0 ? ((totalVentas - compras_totalReposicion - totalGastosAgregados) / totalVentas) * 100 : 0,
+      margenNeto: margenNetoMensual,
       graficoMensual,
       graficoMetodosPago: [], 
       detalles: {
