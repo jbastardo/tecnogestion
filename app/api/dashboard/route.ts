@@ -22,8 +22,21 @@ export async function GET(req: Request) {
     const posOrders = await odoo.searchRead(
       'pos.order',
       [['date_order', '>=', fechaInicio + ' 00:00:00'], ['date_order', '<=', fechaFin + ' 23:59:59'], ['state', 'in', ['paid', 'done', 'invoiced']]],
-      ['name', 'amount_total', 'amount_tax', 'session_id', 'state']
+      ['name', 'amount_total', 'amount_tax', 'session_id', 'state', 'account_move']
     );
+
+    const moveIds = posOrders.map((o: any) => o.account_move && o.account_move[0]).filter(Boolean);
+    let moveJournals: any = {};
+    if (moveIds.length > 0) {
+      const moves = await odoo.searchRead(
+        'account.move',
+        [['id', 'in', moveIds]],
+        ['journal_id']
+      );
+      moves.forEach((m: any) => {
+        moveJournals[m.id] = m.journal_id && m.journal_id[1] ? m.journal_id[1].toLowerCase() : '';
+      });
+    }
 
     let totalVentas = 0;
     let totalImpuestos = 0;
@@ -33,7 +46,11 @@ export async function GET(req: Request) {
     posOrders.forEach((order: any) => {
       totalVentas += order.amount_total;
       totalImpuestos += order.amount_tax;
-      if (order.state === 'invoiced') {
+      
+      const moveId = order.account_move && order.account_move[0];
+      const journalName = moveId ? (moveJournals[moveId] || '') : '';
+      
+      if (journalName.includes('factura')) {
         totalFacturado += order.amount_total;
       } else {
         totalNotasDeVenta += order.amount_total;
