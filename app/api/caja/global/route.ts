@@ -49,8 +49,8 @@ const getOdooCajaResumen = async (config_id: number, cajaName: string) => {
 
         return {
             id: `odoo_${config_id}`,
-            name: cajaName,
-            type: 'ODOO',
+            name: `POS: ${cajaName}`,
+            type: 'POS_ODOO',
             saldoActualUsd,
             saldoActualBs
         };
@@ -90,24 +90,63 @@ export async function GET(req: Request) {
   try {
     const cajasLocales = [
         { id: 'boveda', name: 'Bóveda Principal' },
-        { id: 'caja_chica', name: 'Caja Chica' },
-        { id: 'banco_nacional', name: 'Bancos Nacionales (Bs)' },
-        { id: 'banco_zelle', name: 'Banco Zelle (USD)' },
-        { id: 'banco_binance', name: 'Banco Binance (USD)' },
-        { id: 'banco_panama', name: 'Banco Banesco Panamá (USD)' }
+        { id: 'caja_chica', name: 'Caja Chica' }
     ];
 
     const localPromises = cajasLocales.map(c => getLocalCajaResumen(c.id, c.name));
     
+    // Obtener POS configs
     let odooConfigs = [];
     try {
         odooConfigs = await odoo.searchRead('pos.config', [], ['name', 'active']);
     } catch(e) {}
     
-    const odooPromises = odooConfigs.map((c: any) => getOdooCajaResumen(c.id, c.name));
+    const odooPosPromises = odooConfigs.map((c: any) => getOdooCajaResumen(c.id, c.name));
 
-    const results = await Promise.all([...localPromises, ...odooPromises]);
-    const activeCajas = results.filter(r => r !== null);
+    // Obtener Diarios de Bancos y Efectivo
+    let bankResumens: any[] = [];
+    try {
+        const journals = await odoo.searchRead(
+            'account.journal',
+            [['type', 'in', ['bank', 'cash']]],
+            ['name', 'code', 'type', 'default_account_id', 'currency_id']
+        );
+        const accountIds = journals.map((j: any) => j.default_account_id && j.default_account_id[0]).filter(Boolean);
+        
+        if (accountIds.length > 0) {
+            const balances = await odoo.executeKw('account.move.line', 'read_group', [
+                [['account_id', 'in', accountIds], ['parent_state', '=', 'posted']],
+                ['debit', 'credit'],
+                ['account_id']
+            ]);
+            
+            const balanceMap: any = {};
+            balances.forEach((b: any) => {
+                if (b.account_id) {
+                    balanceMap[b.account_id[0]] = (b.debit || 0) - (b.credit || 0);
+                }
+            });
+            
+            bankResumens = journals.map((j: any) => {
+                const accId = j.default_account_id ? j.default_account_id[0] : null;
+                const balance = accId ? (balanceMap[accId] || 0) : 0;
+                const currency = j.currency_id && j.currency_id[1] ? j.currency_id[1] : 'Bs';
+                const isUsd = currency.includes('USD') || currency.includes('$');
+                return {
+                    id: `journal_${j.id}`,
+                    name: j.name,
+                    type: 'BANCO_ODOO',
+                    saldoActualUsd: isUsd ? balance : 0,
+                    saldoActualBs: !isUsd ? balance : 0
+                };
+            });
+        }
+    } catch(e) {
+        console.error("Error fetching Odoo Banks:", e);
+    }
+
+    const results = await Promise.all([...localPromises, ...odooPosPromises]);
+    const activeCajas = [...results.filter(r => r !== null), ...bankResumens];
 
     let totalUsd = 0;
     let totalBs = 0;

@@ -16,7 +16,13 @@ export async function GET(req: Request) {
       ['name', 'active']
     );
     
-    return NextResponse.json({ configs });
+    const banks = await odoo.searchRead(
+      'account.journal',
+      [['type', 'in', ['bank', 'cash']]],
+      ['name', 'code', 'type']
+    );
+    
+    return NextResponse.json({ configs, banks });
   } catch (error: any) {
     console.error("Error fetching odoo POS configs:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });

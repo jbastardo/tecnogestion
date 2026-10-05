@@ -125,6 +125,86 @@ export async function GET(req: Request) {
       }
     }
 
+    // --- LÓGICA PARA BANCOS/DIARIOS ODOO ---
+    if (cajaId.startsWith('journal_')) {
+      const journal_id = parseInt(cajaId.split('_')[1]);
+      
+      if (action === 'resumen') {
+         const journal = await odoo.searchRead('account.journal', [['id', '=', journal_id]], ['name', 'default_account_id', 'currency_id']);
+         if (!journal.length) return NextResponse.json({ estado: 'CERRADA', cajaActiva: null, resumen: null });
+         
+         const j = journal[0];
+         let balance = 0;
+         let ingresos = 0;
+         let egresos = 0;
+         
+         if (j.default_account_id) {
+             const sum = await odoo.executeKw('account.move.line', 'read_group', [
+                 [['account_id', '=', j.default_account_id[0]], ['parent_state', '=', 'posted']],
+                 ['debit', 'credit'],
+                 ['account_id']
+             ]);
+             if (sum && sum.length > 0) {
+                 ingresos = sum[0].debit || 0;
+                 egresos = sum[0].credit || 0;
+                 balance = ingresos - egresos;
+             }
+         }
+         
+         const isUsd = j.currency_id && j.currency_id[1] && j.currency_id[1].includes('USD');
+         
+         return NextResponse.json({
+            estado: 'ABIERTA',
+            cajaAbierta: {
+              saldoAperturaBs: 0,
+              saldoAperturaUsd: 0,
+              fechaApertura: 'Siempre Activa',
+            },
+            resumen: {
+              ingresosUsd: isUsd ? ingresos : 0, 
+              egresosUsd: isUsd ? egresos : 0, 
+              ingresosBs: !isUsd ? ingresos : 0, 
+              egresosBs: !isUsd ? egresos : 0,
+              saldoActualUsd: isUsd ? balance : 0,
+              saldoActualBs: !isUsd ? balance : 0,
+            }
+         });
+      }
+
+      if (action === 'movimientos') {
+         const journal = await odoo.searchRead('account.journal', [['id', '=', journal_id]], ['default_account_id', 'currency_id']);
+         if (!journal.length || !journal[0].default_account_id) return NextResponse.json({ movimientos: [] });
+         
+         const isUsd = journal[0].currency_id && journal[0].currency_id[1] && journal[0].currency_id[1].includes('USD');
+         
+         let domain: any[] = [['account_id', '=', journal[0].default_account_id[0]], ['parent_state', '=', 'posted']];
+         if (fechaInicio && fechaFin) {
+            domain.push(['date', '>=', fechaInicio]);
+            domain.push(['date', '<=', fechaFin]);
+         }
+         
+         const lines = await odoo.searchRead('account.move.line', domain, ['date', 'name', 'ref', 'debit', 'credit'], 0, 100, 'date desc, id desc');
+         
+         const movimientos = lines.map((l: any) => {
+            const monto = (l.debit || 0) - (l.credit || 0);
+            return {
+               id: l.id,
+               fecha: l.date,
+               concepto: `${l.ref || ''} ${l.name || ''}`.trim(),
+               montoUsd: isUsd ? Math.abs(monto) : 0,
+               montoBs: !isUsd ? Math.abs(monto) : 0,
+               tipo: monto >= 0 ? 'INGRESO' : 'EGRESO'
+            };
+         });
+         
+         return NextResponse.json({ movimientos });
+      }
+
+      if (action === 'cuadres') {
+         return NextResponse.json({ cuadres: [] });
+      }
+    }
+
     // --- LÓGICA PARA CAJAS LOCALES (PRISMA) ---
     // Obtener la caja activa del día o la última abierta
     const cajaAbierta = await prisma.aperturaCierreCaja.findFirst({

@@ -17,6 +17,7 @@ export default function CajaPage() {
   const [loading, setLoading] = useState(true);
 
   const [odooCajas, setOdooCajas] = useState<any[]>([]);
+  const [odooBancos, setOdooBancos] = useState<any[]>([]);
   
   // Modal states
   const [isAperturaOpen, setIsAperturaOpen] = useState(false);
@@ -51,6 +52,7 @@ export default function CajaPage() {
       .then(res => res.json())
       .then(data => {
         if (data.configs) setOdooCajas(data.configs);
+        if (data.banks) setOdooBancos(data.banks);
       })
       .catch(console.error);
   }, []);
@@ -73,12 +75,13 @@ export default function CajaPage() {
               <option value="boveda">Bóveda Principal (Local)</option>
               <option value="caja_chica">Caja Chica (Admin)</option>
             </optgroup>
-            <optgroup label="Bancos (Ingresos)">
-              <option value="banco_nacional">Bancos Nacionales (Bs)</option>
-              <option value="banco_zelle">Banco Zelle (USD)</option>
-              <option value="banco_binance">Banco Binance (USD)</option>
-              <option value="banco_panama">Banco Banesco Panamá (USD)</option>
-            </optgroup>
+            {odooBancos.length > 0 && (
+              <optgroup label="Bancos / Diarios (Odoo)">
+                {odooBancos.map((b) => (
+                  <option key={b.id} value={`journal_${b.id}`}>{b.name}</option>
+                ))}
+              </optgroup>
+            )}
             {odooCajas.length > 0 && (
               <optgroup label="Cajas POS (Odoo)">
                 {odooCajas.map((c) => (
@@ -105,7 +108,7 @@ export default function CajaPage() {
           )}
           <button 
             onClick={() => setIsMovimientoOpen(true)}
-            disabled={cajaActiva === 'global' || data?.estado === 'CERRADA' || cajaActiva.startsWith('odoo_')}
+            disabled={cajaActiva === 'global' || data?.estado === 'CERRADA' || cajaActiva.startsWith('odoo_') || cajaActiva.startsWith('journal_')}
             className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-2 disabled:opacity-50"
           >
             <Plus size={16} />
@@ -113,7 +116,7 @@ export default function CajaPage() {
           </button>
           <button 
             onClick={() => setIsCerrarOpen(true)}
-            disabled={cajaActiva === 'global' || data?.estado === 'CERRADA' || cajaActiva.startsWith('odoo_')}
+            disabled={cajaActiva === 'global' || data?.estado === 'CERRADA' || cajaActiva.startsWith('odoo_') || cajaActiva.startsWith('journal_')}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50"
           >
             <FileText size={16} />
@@ -210,7 +213,7 @@ export default function CajaPage() {
                 </div>
              </div>
              
-             {data?.estado === 'CERRADA' && !cajaActiva.startsWith('odoo_') && (
+             {data?.estado === 'CERRADA' && !cajaActiva.startsWith('odoo_') && !cajaActiva.startsWith('journal_') && (
                <button 
                  onClick={() => setIsAperturaOpen(true)}
                  className="text-sm border border-border bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 px-4 py-2 rounded-lg transition-colors font-semibold"
@@ -218,9 +221,9 @@ export default function CajaPage() {
                  Abrir Caja
                </button>
              )}
-             {cajaActiva.startsWith('odoo_') && (
+             {(cajaActiva.startsWith('odoo_') || cajaActiva.startsWith('journal_')) && (
                <div className="text-sm text-muted-foreground flex flex-col items-end">
-                 <span>Las cajas Odoo de POS se administran en Odoo.</span>
+                 <span>Las cajas y bancos de Odoo se administran en Odoo.</span>
                </div>
              )}
           </div>
