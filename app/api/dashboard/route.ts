@@ -22,15 +22,22 @@ export async function GET(req: Request) {
     const posOrders = await odoo.searchRead(
       'pos.order',
       [['date_order', '>=', fechaInicio + ' 00:00:00'], ['date_order', '<=', fechaFin + ' 23:59:59'], ['state', 'in', ['paid', 'done', 'invoiced']]],
-      ['name', 'amount_total', 'amount_tax', 'session_id']
+      ['name', 'amount_total', 'amount_tax', 'session_id', 'state']
     );
 
     let totalVentas = 0;
     let totalImpuestos = 0;
+    let totalFacturado = 0;
+    let totalNotasDeVenta = 0;
     
     posOrders.forEach((order: any) => {
       totalVentas += order.amount_total;
       totalImpuestos += order.amount_tax;
+      if (order.state === 'invoiced') {
+        totalFacturado += order.amount_total;
+      } else {
+        totalNotasDeVenta += order.amount_total;
+      }
     });
 
     const cuentasClave = ['1122001', '1122007', '1141001', '1141003'];
@@ -184,6 +191,8 @@ export async function GET(req: Request) {
       detalles: {
         ventas: {
           total: totalVentas,
+          facturado: totalFacturado,
+          notasDeVenta: totalNotasDeVenta,
           impuestos: totalImpuestos,
           cxc: totalCXC
         },

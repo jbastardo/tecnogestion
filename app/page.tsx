@@ -125,10 +125,10 @@ const item = {
         {/* Tarjeta 1 */}
         <motion.div variants={item} className="rounded-xl border border-border bg-card p-6 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <h3 className="tracking-tight text-sm font-medium">Ingresos Totales</h3>
+            <h3 className="tracking-tight text-sm font-medium">Ingresos Percibidos</h3>
             <DollarSign className="h-4 w-4 text-emerald-400" />
           </div>
-          <div className="text-2xl font-bold">${dashboardData.ingresosTotales.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</div>
+          <div className="text-2xl font-bold">${(dashboardData.ingresosTotales - dashboardData.detalles.ventas.cxc.usd).toLocaleString("es-VE", { minimumFractionDigits: 2 })}</div>
           <p className="text-xs text-emerald-400 flex items-center mt-1">
             <ArrowUpRight className="mr-1 h-3 w-3" />
             +20.1% desde el mes pasado
@@ -186,8 +186,20 @@ const item = {
           <h3 className="tracking-tight text-sm font-medium mb-4 text-emerald-400">Desglose de Ventas</h3>
           <div className="space-y-3">
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Ingresos (Neto)</span>
+              <span className="text-muted-foreground font-medium">Ventas Totales</span>
               <span className="font-medium">${dashboardData.detalles.ventas.total.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span>
+            </div>
+            <div className="flex justify-between text-sm pl-2 border-l-2 border-emerald-500/20">
+              <span className="text-muted-foreground">↳ Facturas</span>
+              <span className="font-medium">${dashboardData.detalles.ventas.facturado?.toLocaleString("es-VE", { minimumFractionDigits: 2 }) || '0.00'}</span>
+            </div>
+            <div className="flex justify-between text-sm pl-2 border-l-2 border-emerald-500/20">
+              <span className="text-muted-foreground">↳ Notas de Venta</span>
+              <span className="font-medium">${dashboardData.detalles.ventas.notasDeVenta?.toLocaleString("es-VE", { minimumFractionDigits: 2 }) || '0.00'}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Ingresos Percibidos</span>
+              <span className="font-medium text-emerald-500">${(dashboardData.detalles.ventas.total - dashboardData.detalles.ventas.cxc.usd).toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Impuestos Generados</span>
