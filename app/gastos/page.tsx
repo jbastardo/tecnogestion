@@ -5,6 +5,8 @@ import { ArrowDownToLine, Search, Plus, Trash2, ArrowUpDown } from "lucide-react
 import { NuevoGastoModal } from "./NuevoGastoModal";
 import { motion } from "framer-motion";
 
+import { formatCurrencyVE } from "@/lib/format";
+
 export default function GastosPage() {
   const [gastos, setGastos] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -30,8 +32,7 @@ export default function GastosPage() {
   const [fechaFin, setFechaFin] = useState(getCaracasDate());
 
   const formatCurrency = (val: any, isDivisa: boolean = false) => {
-    const symbol = isDivisa ? '$ ' : 'Bs. ';
-    return symbol + new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(val) || 0);
+    return formatCurrencyVE(val, isDivisa);
   };
 
   const fetchGastos = () => {

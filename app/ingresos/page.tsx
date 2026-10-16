@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { ArrowDownToLine, Search, Plus, Trash2, ArrowUpDown } from "lucide-react";
 import { NuevoIngresoModal } from "./NuevoIngresoModal";
+import { formatCurrencyVE, formatNumberVE } from "@/lib/format";
 
 export default function IngresosPage() {
   const [ingresos, setIngresos] = useState<any[]>([]);
@@ -64,8 +65,7 @@ export default function IngresosPage() {
   };
 
   const formatCurrency = (val: any, isDivisa: boolean = false) => {
-    const symbol = isDivisa ? '$ ' : 'Bs. ';
-    return symbol + new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(val) || 0);
+    return formatCurrencyVE(val, isDivisa);
   };
 
   const handleSort = (key: string) => {
@@ -312,7 +312,7 @@ export default function IngresosPage() {
                       {formatCurrency(ingreso.pagadoUSD, true)}
                     </td>
                     <td className="px-4 py-3 text-right text-muted-foreground">
-                      {ingreso.tasaAplicada ? Number(ingreso.tasaAplicada).toFixed(2) : '-'}
+                      {ingreso.tasaAplicada ? formatNumberVE(ingreso.tasaAplicada, 2) : '-'}
                     </td>
                     <td className="px-4 py-3 text-right text-blue-400 group relative">
                       <div>{formatCurrency(ingreso.pagadoBsReal, false)}</div>

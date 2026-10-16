@@ -10,6 +10,7 @@ import { AjustarAperturaModal } from "./AjustarAperturaModal";
 import { NuevoMovimientoModal } from "./NuevoMovimientoModal";
 import { CerrarCajaModal } from "./CerrarCajaModal";
 import { ArqueoCajaModal } from "./ArqueoCajaModal";
+import { formatCurrencyVE, formatNumberVE } from "@/lib/format";
 
 export default function CajaPage() {
   const [activeTab, setActiveTab] = useState<"resumen" | "movimientos" | "cuadres">("resumen");
@@ -244,14 +245,14 @@ export default function CajaPage() {
             {/* KPI 1: Total Global USD */}
             <div className="rounded-xl border border-border bg-card p-5 shadow-sm flex flex-col justify-between">
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Saldo Global Total (USD)</span>
-              <div className="text-3xl font-bold text-emerald-500 mt-2">${(data.totalUsd || 0).toFixed(2)}</div>
+              <div className="text-3xl font-bold text-emerald-500 mt-2">{formatCurrencyVE(data.totalUsd || 0, true)}</div>
               <span className="text-xs text-muted-foreground mt-1">Cajas locales + POS + Bancos</span>
             </div>
 
             {/* KPI 2: Total Global Bs */}
             <div className="rounded-xl border border-border bg-card p-5 shadow-sm flex flex-col justify-between">
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Saldo Global Total (Bs)</span>
-              <div className="text-3xl font-bold text-primary mt-2">Bs. {(data.totalBs || 0).toFixed(2)}</div>
+              <div className="text-3xl font-bold text-primary mt-2">{formatCurrencyVE(data.totalBs || 0, false)}</div>
               <span className="text-xs text-muted-foreground mt-1">Bolívares en efectivo y cuentas</span>
             </div>
 
@@ -263,10 +264,10 @@ export default function CajaPage() {
               </div>
               <div className="mt-2">
                 <div className="text-2xl font-bold text-foreground">
-                  ${(data.totalAperturaUsd || 0).toFixed(2)}
+                  {formatCurrencyVE(data.totalAperturaUsd || 0, true)}
                 </div>
                 <div className="text-sm font-semibold text-muted-foreground">
-                  Bs. {(data.totalAperturaBs || 0).toFixed(2)}
+                  {formatCurrencyVE(data.totalAperturaBs || 0, false)}
                 </div>
               </div>
               <span className="text-[11px] text-muted-foreground mt-1">Base de apertura inicial</span>
@@ -359,18 +360,18 @@ export default function CajaPage() {
                        <td className="px-4 py-3 text-right text-xs text-muted-foreground">
                          {c.saldoAperturaUsd > 0 || c.saldoAperturaBs > 0 ? (
                            <>
-                             ${(c.saldoAperturaUsd || 0).toFixed(2)}<br/>
-                             <span>Bs. {(c.saldoAperturaBs || 0).toFixed(2)}</span>
+                             {formatCurrencyVE(c.saldoAperturaUsd || 0, true)}<br/>
+                             <span>{formatCurrencyVE(c.saldoAperturaBs || 0, false)}</span>
                            </>
                          ) : (
                            <span className="text-muted-foreground/60">-</span>
                          )}
                        </td>
                        <td className="px-4 py-3 text-right font-bold text-emerald-500 text-base">
-                         ${(c.saldoActualUsd || 0).toFixed(2)}
+                         {formatCurrencyVE(c.saldoActualUsd || 0, true)}
                        </td>
                        <td className="px-4 py-3 text-right font-semibold text-foreground text-sm">
-                         Bs. {(c.saldoActualBs || 0).toFixed(2)}
+                         {formatCurrencyVE(c.saldoActualBs || 0, false)}
                        </td>
                        <td className="px-4 py-3 text-center">
                          <button
@@ -458,10 +459,10 @@ export default function CajaPage() {
               </div>
               <div className="mt-4">
                 <div className="text-3xl font-extrabold text-foreground">
-                  ${(data?.cajaAbierta?.saldoAperturaUsd || 0).toFixed(2)}
+                  {formatCurrencyVE(data?.cajaAbierta?.saldoAperturaUsd || 0, true)}
                 </div>
                 <div className="text-lg font-semibold text-muted-foreground mt-0.5">
-                  Bs. {(data?.cajaAbierta?.saldoAperturaBs || 0).toFixed(2)}
+                  {formatCurrencyVE(data?.cajaAbierta?.saldoAperturaBs || 0, false)}
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
                   {data?.cajaAbierta?.fechaApertura && data.cajaAbierta.fechaApertura !== 'Siempre Activa'
@@ -481,10 +482,10 @@ export default function CajaPage() {
               </div>
               <div className="mt-4">
                 <div className="text-2xl font-bold text-emerald-500">
-                  +${(data?.resumen?.ingresosUsd || 0).toFixed(2)}
+                  +{formatCurrencyVE(data?.resumen?.ingresosUsd || 0, true)}
                 </div>
                 <div className="text-base font-semibold text-emerald-500/80 mt-0.5">
-                  +Bs. {(data?.resumen?.ingresosBs || 0).toFixed(2)}
+                  +{formatCurrencyVE(data?.resumen?.ingresosBs || 0, false)}
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">Cobros y entradas efectivas</p>
               </div>
@@ -500,10 +501,10 @@ export default function CajaPage() {
               </div>
               <div className="mt-4">
                 <div className="text-2xl font-bold text-destructive">
-                  -${(data?.resumen?.egresosUsd || 0).toFixed(2)}
+                  -{formatCurrencyVE(data?.resumen?.egresosUsd || 0, true)}
                 </div>
                 <div className="text-base font-semibold text-destructive/80 mt-0.5">
-                  -Bs. {(data?.resumen?.egresosBs || 0).toFixed(2)}
+                  -{formatCurrencyVE(data?.resumen?.egresosBs || 0, false)}
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">Gastos, compras y retiros</p>
               </div>
@@ -519,10 +520,10 @@ export default function CajaPage() {
               </div>
               <div className="mt-4">
                 <div className="text-3xl font-extrabold text-foreground">
-                  ${(data?.resumen?.saldoActualUsd || 0).toFixed(2)}
+                  {formatCurrencyVE(data?.resumen?.saldoActualUsd || 0, true)}
                 </div>
                 <div className="text-lg font-semibold text-muted-foreground mt-0.5">
-                  Bs. {(data?.resumen?.saldoActualBs || 0).toFixed(2)}
+                  {formatCurrencyVE(data?.resumen?.saldoActualBs || 0, false)}
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">Apertura + Ingresos - Egresos</p>
               </div>
@@ -570,10 +571,10 @@ export default function CajaPage() {
                       {mov.concepto}
                     </td>
                     <td className="px-4 py-3 text-right font-bold text-foreground">
-                      ${mov.montoUsd.toFixed(2)}
+                      {formatCurrencyVE(mov.montoUsd, true)}
                     </td>
                     <td className="px-4 py-3 text-right font-medium text-muted-foreground">
-                      Bs. {mov.montoBs.toFixed(2)}
+                      {formatCurrencyVE(mov.montoBs, false)}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
@@ -629,16 +630,16 @@ export default function CajaPage() {
                         {cuadre.fechaCierre ? new Date(cuadre.fechaCierre).toLocaleString() : 'N/A'}
                       </td>
                       <td className="px-4 py-3 text-right font-bold text-foreground">
-                        ${(cuadre.saldoFisicoUsd || 0).toFixed(2)}<br/>
-                        <span className="text-xs text-muted-foreground font-medium">Bs. {(cuadre.saldoFisicoBs || 0).toFixed(2)}</span>
+                        {formatCurrencyVE(cuadre.saldoFisicoUsd || 0, true)}<br/>
+                        <span className="text-xs text-muted-foreground font-medium">{formatCurrencyVE(cuadre.saldoFisicoBs || 0, false)}</span>
                       </td>
                       <td className="px-4 py-3 text-right">
                         {hasDif ? (
                           <div className="flex flex-col items-end text-destructive font-bold text-xs">
                             <span className="flex items-center gap-1">
-                              <AlertTriangle size={12}/> {difUsd > 0 ? `+${difUsd.toFixed(2)}$` : `${difUsd.toFixed(2)}$`}
+                              <AlertTriangle size={12}/> {difUsd > 0 ? `+${formatCurrencyVE(difUsd, true)}` : formatCurrencyVE(difUsd, true)}
                             </span>
-                            <span className="text-[11px] font-medium">{difBs > 0 ? `+${difBs.toFixed(2)}Bs` : `${difBs.toFixed(2)}Bs`}</span>
+                            <span className="text-[11px] font-medium">{difBs > 0 ? `+${formatCurrencyVE(difBs, false)}` : formatCurrencyVE(difBs, false)}</span>
                           </div>
                         ) : (
                           <span className="text-emerald-500 font-bold inline-flex items-center gap-1">

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Briefcase, CreditCard, CheckCircle2, XCircle, Search, RefreshCcw, DollarSign, ArrowRightLeft, Landmark } from 'lucide-react';
+import { formatCurrencyVE, formatNumberVE } from '@/lib/format';
 
 export default function TesoreriaPage() {
   const [tab, setTab] = useState('pendientes'); // 'pendientes' | 'ordenes'
@@ -152,7 +153,7 @@ export default function TesoreriaPage() {
                         <td className="px-4 py-3 text-muted-foreground">{p.concepto}</td>
                         <td className="px-4 py-3 text-muted-foreground">{p.moneda}</td>
                         <td className="px-4 py-3 text-right font-bold text-destructive">
-                          {p.cxp.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                          {formatNumberVE(p.cxp, 2)}
                         </td>
                         <td className="px-4 py-3 text-center">
                           <button 
@@ -194,11 +195,11 @@ export default function TesoreriaPage() {
                   <div className="flex gap-4 mb-6 mt-auto">
                     <div className="bg-secondary/50 rounded-lg p-3 flex-1">
                       <p className="text-xs text-muted-foreground mb-1 uppercase">Monto USD</p>
-                      <p className="text-lg font-bold text-foreground">${(orden.montoUsd || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</p>
+                      <p className="text-lg font-bold text-foreground">{formatCurrencyVE(orden.montoUsd || 0, true)}</p>
                     </div>
                     <div className="bg-secondary/50 rounded-lg p-3 flex-1">
                       <p className="text-xs text-muted-foreground mb-1 uppercase">Monto Bs</p>
-                      <p className="text-lg font-bold text-foreground">Bs {(orden.montoBs || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</p>
+                      <p className="text-lg font-bold text-foreground">{formatCurrencyVE(orden.montoBs || 0, false)}</p>
                     </div>
                   </div>
 

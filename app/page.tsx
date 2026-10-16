@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowUpRight, ArrowDownRight, DollarSign, Wallet, CreditCard, Activity } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
+import { formatCurrencyVE, formatNumberVE, formatPercentVE } from "@/lib/format";
 
 export default function Home() {
   const [dashboardData, setDashboardData] = useState<any>(null);
@@ -128,10 +129,10 @@ const item = {
             <h3 className="tracking-tight text-sm font-medium">Ingresos Percibidos</h3>
             <DollarSign className="h-4 w-4 text-emerald-400" />
           </div>
-          <div className="text-2xl font-bold">${(dashboardData.ingresosTotales - dashboardData.detalles.ventas.cxc.usd).toLocaleString("es-VE", { minimumFractionDigits: 2 })}</div>
+          <div className="text-2xl font-bold">{formatCurrencyVE(dashboardData.ingresosTotales - dashboardData.detalles.ventas.cxc.usd, true)}</div>
           <p className="text-xs text-emerald-400 flex items-center mt-1">
             <ArrowUpRight className="mr-1 h-3 w-3" />
-            +20.1% desde el mes pasado
+            +20,1% desde el mes pasado
           </p>
         </motion.div>
 
@@ -141,10 +142,10 @@ const item = {
             <h3 className="tracking-tight text-sm font-medium">Gastos Operativos</h3>
             <CreditCard className="h-4 w-4 text-destructive" />
           </div>
-          <div className="text-2xl font-bold">${dashboardData.gastosTotales.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</div>
+          <div className="text-2xl font-bold">{formatCurrencyVE(dashboardData.gastosTotales, true)}</div>
           <p className="text-xs text-destructive flex items-center mt-1">
             <ArrowUpRight className="mr-1 h-3 w-3" />
-            +4.3% desde el mes pasado
+            +4,3% desde el mes pasado
           </p>
         </motion.div>
 
@@ -154,7 +155,7 @@ const item = {
             <h3 className="tracking-tight text-sm font-medium">Fondo Global (USD)</h3>
             <Wallet className="h-4 w-4 text-blue-400" />
           </div>
-          <div className="text-2xl font-bold">${cajaData?.totalUsd?.toLocaleString("es-VE", { minimumFractionDigits: 2 }) || '0.00'}</div>
+          <div className="text-2xl font-bold">{formatCurrencyVE(cajaData?.totalUsd || 0, true)}</div>
           <p className="text-xs text-muted-foreground mt-1">
             Efectivo y bancos en divisas
           </p>
@@ -166,10 +167,10 @@ const item = {
             <h3 className="tracking-tight text-sm font-medium">Margen Neto Mensual</h3>
             <Activity className="h-4 w-4 text-purple-400" />
           </div>
-          <div className="text-2xl font-bold">{dashboardData.margenNeto.toFixed(1)}%</div>
+          <div className="text-2xl font-bold">{formatPercentVE(dashboardData.margenNeto, 1)}</div>
           <p className={`text-xs flex items-center mt-1 ${(dashboardData.margenNeto - dashboardData.margenNetoPrevio) >= 0 ? 'text-emerald-400' : 'text-destructive'}`}>
             {(dashboardData.margenNeto - dashboardData.margenNetoPrevio) >= 0 ? <ArrowUpRight className="mr-1 h-3 w-3" /> : <ArrowDownRight className="mr-1 h-3 w-3" />}
-            {((dashboardData.margenNeto - dashboardData.margenNetoPrevio) > 0 ? '+' : '')}{(dashboardData.margenNeto - dashboardData.margenNetoPrevio).toFixed(1)}% desde el mes pasado
+            {((dashboardData.margenNeto - dashboardData.margenNetoPrevio) > 0 ? '+' : '')}{formatPercentVE(dashboardData.margenNeto - dashboardData.margenNetoPrevio, 1)} desde el mes pasado
           </p>
         </motion.div>
       </motion.div>
@@ -187,29 +188,29 @@ const item = {
           <div className="space-y-3">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground font-medium">Ventas Totales</span>
-              <span className="font-medium">${dashboardData.detalles.ventas.total.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span>
+              <span className="font-medium">{formatCurrencyVE(dashboardData.detalles.ventas.total, true)}</span>
             </div>
             <div className="flex justify-between text-sm pl-2 border-l-2 border-emerald-500/20">
               <span className="text-muted-foreground">↳ Facturas</span>
-              <span className="font-medium">${dashboardData.detalles.ventas.facturado?.toLocaleString("es-VE", { minimumFractionDigits: 2 }) || '0.00'}</span>
+              <span className="font-medium">{formatCurrencyVE(dashboardData.detalles.ventas.facturado || 0, true)}</span>
             </div>
             <div className="flex justify-between text-sm pl-2 border-l-2 border-emerald-500/20">
               <span className="text-muted-foreground">↳ Notas de Venta</span>
-              <span className="font-medium">${dashboardData.detalles.ventas.notasDeVenta?.toLocaleString("es-VE", { minimumFractionDigits: 2 }) || '0.00'}</span>
+              <span className="font-medium">{formatCurrencyVE(dashboardData.detalles.ventas.notasDeVenta || 0, true)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Ingresos Percibidos</span>
-              <span className="font-medium text-emerald-500">${(dashboardData.detalles.ventas.total - dashboardData.detalles.ventas.cxc.usd).toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span>
+              <span className="font-medium text-emerald-500">{formatCurrencyVE(dashboardData.detalles.ventas.total - dashboardData.detalles.ventas.cxc.usd, true)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Impuestos Generados</span>
-              <span className="font-medium">${dashboardData.detalles.ventas.impuestos.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span>
+              <span className="font-medium">{formatCurrencyVE(dashboardData.detalles.ventas.impuestos, true)}</span>
             </div>
             <div className="flex justify-between text-sm items-center">
               <span className="text-muted-foreground">CxC (Por Cobrar)</span>
               <div className="text-right">
-                <div className="font-medium text-amber-400">${dashboardData.detalles.ventas.cxc.usd.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</div>
-                <div className="font-medium text-amber-400/80 text-xs">Bs. {dashboardData.detalles.ventas.cxc.ves.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</div>
+                <div className="font-medium text-amber-400">{formatCurrencyVE(dashboardData.detalles.ventas.cxc.usd, true)}</div>
+                <div className="font-medium text-amber-400/80 text-xs">{formatCurrencyVE(dashboardData.detalles.ventas.cxc.ves, false)}</div>
               </div>
             </div>
           </div>
@@ -221,11 +222,11 @@ const item = {
           <div className="space-y-3">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Reposición Mercancía</span>
-              <span className="font-medium">${dashboardData.detalles.compras.totalReposicion.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span>
+              <span className="font-medium">{formatCurrencyVE(dashboardData.detalles.compras.totalReposicion, true)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Retención IVA (25%)</span>
-              <span className="font-medium text-destructive">${dashboardData.detalles.compras.iva25.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span>
+              <span className="font-medium text-destructive">{formatCurrencyVE(dashboardData.detalles.compras.iva25, true)}</span>
             </div>
           </div>
         </motion.div>
@@ -236,19 +237,19 @@ const item = {
           <div className="space-y-3">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Nómina</span>
-              <span className="font-medium">${dashboardData.detalles.gastos.nomina.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span>
+              <span className="font-medium">{formatCurrencyVE(dashboardData.detalles.gastos.nomina, true)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Servicios</span>
-              <span className="font-medium">${dashboardData.detalles.gastos.servicios.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span>
+              <span className="font-medium">{formatCurrencyVE(dashboardData.detalles.gastos.servicios, true)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Gastos Operativos</span>
-              <span className="font-medium">${dashboardData.detalles.gastos.otros.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span>
+              <span className="font-medium">{formatCurrencyVE(dashboardData.detalles.gastos.otros, true)}</span>
             </div>
             <div className="flex justify-between text-sm border-t border-border pt-2">
               <span className="text-muted-foreground">Retención IVA (25%)</span>
-              <span className="font-medium text-destructive">${dashboardData.detalles.gastos.iva25.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span>
+              <span className="font-medium text-destructive">{formatCurrencyVE(dashboardData.detalles.gastos.iva25, true)}</span>
             </div>
           </div>
         </motion.div>
@@ -259,19 +260,19 @@ const item = {
           <div className="space-y-3">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Total Bancos (Bs)</span>
-              <span className="font-medium">Bs. {cajaData?.totalBancosBs?.toLocaleString("es-VE", { minimumFractionDigits: 2 }) || '0.00'}</span>
+              <span className="font-medium">{formatCurrencyVE(cajaData?.totalBancosBs || 0, false)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Total Bancos (USD)</span>
-              <span className="font-medium">$ {cajaData?.totalBancosUsd?.toLocaleString("es-VE", { minimumFractionDigits: 2 }) || '0.00'}</span>
+              <span className="font-medium">{formatCurrencyVE(cajaData?.totalBancosUsd || 0, true)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Total Cajas Físicas (Bs)</span>
-              <span className="font-medium">Bs. {cajaData?.totalCajasBs?.toLocaleString("es-VE", { minimumFractionDigits: 2 }) || '0.00'}</span>
+              <span className="font-medium">{formatCurrencyVE(cajaData?.totalCajasBs || 0, false)}</span>
             </div>
             <div className="flex justify-between text-sm border-t border-border pt-2">
               <span className="text-muted-foreground">Total Cajas Físicas (USD)</span>
-              <span className="font-medium">$ {cajaData?.totalCajasUsd?.toLocaleString("es-VE", { minimumFractionDigits: 2 }) || '0.00'}</span>
+              <span className="font-medium">{formatCurrencyVE(cajaData?.totalCajasUsd || 0, true)}</span>
             </div>
           </div>
         </motion.div>
@@ -303,8 +304,9 @@ const item = {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
                 <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
+                <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => formatCurrencyVE(value, true, 0)} />
                 <Tooltip 
+                  formatter={(val: any) => [formatCurrencyVE(val, true), ""]}
                   contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px' }}
                   itemStyle={{ color: '#f8fafc' }}
                 />
@@ -330,8 +332,9 @@ const item = {
               <BarChart data={dashboardData.graficoMetodosPago} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
                 <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => formatCurrencyVE(value, true, 0)} />
                 <Tooltip 
+                  formatter={(val: any) => [formatCurrencyVE(val, true), ""]}
                   cursor={{fill: '#334155', opacity: 0.4}}
                   contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px' }}
                 />

@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { ArrowDownToLine, Search, Plus, Trash2, ArrowUpDown } from "lucide-react";
 import { NuevaCompraModal } from "./NuevaCompraModal";
 
+import { formatCurrencyVE } from "@/lib/format";
+
 export default function ComprasPage() {
   const [compras, setCompras] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -25,8 +27,7 @@ export default function ComprasPage() {
   const [fechaFin, setFechaFin] = useState(getCaracasDate());
 
   const formatCurrency = (val: any, isDivisa: boolean = false) => {
-    const symbol = isDivisa ? '$ ' : 'Bs. ';
-    return symbol + new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(val) || 0);
+    return formatCurrencyVE(val, isDivisa);
   };
 
   const fetchCompras = () => {

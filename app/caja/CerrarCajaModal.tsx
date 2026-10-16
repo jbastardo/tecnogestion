@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { X, AlertCircle, Calculator } from "lucide-react";
 import { ArqueoCajaModal } from "./ArqueoCajaModal";
+import { formatCurrencyVE } from "@/lib/format";
 
 export function CerrarCajaModal({ isOpen, onClose, onSave, cajaActiva, saldosEsperados }: any) {
   const [saldoUsd, setSaldoUsd] = useState("");
@@ -58,7 +59,7 @@ export function CerrarCajaModal({ isOpen, onClose, onSave, cajaActiva, saldosEsp
         <div className="bg-blue-500/10 text-blue-600 border border-blue-500/20 p-3 rounded-lg flex gap-3 text-sm mb-4">
           <AlertCircle size={16} className="mt-0.5 shrink-0" />
           <p>
-            El sistema espera que tengas <strong>${(saldosEsperados?.saldoActualUsd || 0).toFixed(2)}</strong> y <strong>Bs. {(saldosEsperados?.saldoActualBs || 0).toFixed(2)}</strong>. Por favor, ingresa el dinero que tienes en físico.
+            El sistema espera que tengas <strong>{formatCurrencyVE(saldosEsperados?.saldoActualUsd || 0, true)}</strong> y <strong>{formatCurrencyVE(saldosEsperados?.saldoActualBs || 0, false)}</strong>. Por favor, ingresa el dinero que tienes en físico.
           </p>
         </div>
 

@@ -44,6 +44,7 @@ graph TD
 ## Características de Interfaz (UX/UI Globales)
 
 El desarrollo cuenta con implementaciones transversales en las tablas para asegurar el rendimiento y facilidad de uso:
+* **Estándar Numérico Venezolano (es-VE):** Todos los números, montos, tasas y porcentajes en la aplicación están estrictamente formateados bajo la convención oficial de Venezuela: separador de miles con punto (`.`) y separador de decimales con coma (`,`) (ej. `$ 1.250,00`, `Bs. 85.340,50`, `15,2%`), implementado de forma universal a través de `lib/format.ts` (`formatCurrencyVE`, `formatNumberVE`, `formatPercentVE`).
 * **Paginación Inteligente (Client-side):** Límite de 50 registros por hoja, optimizando la velocidad de carga de la información.
 * **Encabezados Fijos (Sticky Headers):** Mantiene fijos los títulos de las columnas y totales al hacer scroll vertical en las tablas.
 * **Totales a la Vista:** Todos los montos se suman dinámicamente y se muestran tanto al **pie de la tabla (TFOOT)** como en los **encabezados de las columnas (THEAD)**, agilizando el control del cuadre.

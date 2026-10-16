@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { ArrowDownToLine, Search, ArrowUpDown } from "lucide-react";
+import { formatCurrencyVE } from "@/lib/format";
 
 export default function CxcPage() {
   const [cuentas, setCuentas] = useState<any[]>([]);
@@ -43,8 +44,7 @@ export default function CxcPage() {
   }, [searchTerm, filtroConcepto, filtroMoneda, filtroOperacion, fechaInicio, fechaFin]);
 
   const formatCurrency = (val: any, moneda: string = "USD") => {
-    const symbol = moneda === 'VES' ? 'Bs. ' : '$ ';
-    return symbol + new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(val) || 0);
+    return formatCurrencyVE(val, moneda === 'VES' ? false : true);
   };
 
   const handleSort = (key: string) => {

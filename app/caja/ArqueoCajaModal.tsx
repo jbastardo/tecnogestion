@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { X, Calculator, Copy, Check, RotateCcw, ArrowRight, ShieldCheck, AlertTriangle } from "lucide-react";
+import { formatCurrencyVE, formatNumberVE } from "@/lib/format";
 
 interface Denomination {
   value: number;
@@ -99,19 +100,19 @@ export function ArqueoCajaModal({
   const generarTextoDesglose = () => {
     const usdLines = DENOMINACIONES_USD
       .filter(d => (conteoUsd[d.value] || 0) > 0)
-      .map(d => `${conteoUsd[d.value]} x ${d.label} = $${((conteoUsd[d.value] || 0) * d.value).toFixed(2)}`);
+      .map(d => `${conteoUsd[d.value]} x ${d.label} = ${formatCurrencyVE((conteoUsd[d.value] || 0) * d.value, true)}`);
 
     const bsLines = DENOMINACIONES_BS
       .filter(d => (conteoBs[d.value] || 0) > 0)
-      .map(d => `${conteoBs[d.value]} x ${d.label} = Bs. ${((conteoBs[d.value] || 0) * d.value).toFixed(2)}`);
+      .map(d => `${conteoBs[d.value]} x ${d.label} = ${formatCurrencyVE((conteoBs[d.value] || 0) * d.value, false)}`);
 
     return [
       `=== ARQUEO DE CAJA (${cajaNombre}) ===`,
-      `Fecha: ${new Date().toLocaleString()}`,
-      `Total USD: $${totalUsd.toFixed(2)}`,
+      `Fecha: ${new Date().toLocaleString('es-VE')}`,
+      `Total USD: ${formatCurrencyVE(totalUsd, true)}`,
       usdLines.length > 0 ? `Billetes USD:\n  ` + usdLines.join("\n  ") : `Billetes USD: Ninguno`,
       `----------------------------`,
-      `Total Bs: Bs. ${totalBs.toFixed(2)}`,
+      `Total Bs: ${formatCurrencyVE(totalBs, false)}`,
       bsLines.length > 0 ? `Billetes Bs:\n  ` + bsLines.join("\n  ") : `Billetes Bs: Ninguno`,
     ].join("\n");
   };
@@ -126,8 +127,8 @@ export function ArqueoCajaModal({
   const handleApply = () => {
     if (onApply) {
       onApply({
-        totalUsd: Number(totalUsd.toFixed(2)),
-        totalBs: Number(totalBs.toFixed(2)),
+        totalUsd: Math.round(totalUsd * 100) / 100,
+        totalBs: Math.round(totalBs * 100) / 100,
         desgloseTexto: generarTextoDesglose()
       });
       onClose();
@@ -173,14 +174,14 @@ export function ArqueoCajaModal({
             <div>
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Físico USD</span>
               <div className="text-2xl font-bold text-emerald-500 mt-1">
-                ${totalUsd.toFixed(2)}
+                {formatCurrencyVE(totalUsd, true)}
               </div>
             </div>
             {difUsd !== null && (
               <div className="text-right">
-                <span className="text-[11px] text-muted-foreground block">Esperado: ${(saldosEsperados?.saldoActualUsd || 0).toFixed(2)}</span>
+                <span className="text-[11px] text-muted-foreground block">Esperado: {formatCurrencyVE(saldosEsperados?.saldoActualUsd || 0, true)}</span>
                 <span className={`text-xs font-semibold inline-flex items-center gap-1 ${Math.abs(difUsd) < 0.01 ? 'text-emerald-500' : difUsd > 0 ? 'text-blue-500' : 'text-destructive'}`}>
-                  {Math.abs(difUsd) < 0.01 ? 'Cuadrado' : difUsd > 0 ? `+${difUsd.toFixed(2)}$ Sobrante` : `${difUsd.toFixed(2)}$ Faltante`}
+                  {Math.abs(difUsd) < 0.01 ? 'Cuadrado' : difUsd > 0 ? `+${formatCurrencyVE(difUsd, true)} Sobrante` : `${formatCurrencyVE(difUsd, true)} Faltante`}
                 </span>
               </div>
             )}
@@ -190,14 +191,14 @@ export function ArqueoCajaModal({
             <div>
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Físico Bs</span>
               <div className="text-2xl font-bold text-primary mt-1">
-                Bs. {totalBs.toFixed(2)}
+                {formatCurrencyVE(totalBs, false)}
               </div>
             </div>
             {difBs !== null && (
               <div className="text-right">
-                <span className="text-[11px] text-muted-foreground block">Esperado: Bs. {(saldosEsperados?.saldoActualBs || 0).toFixed(2)}</span>
+                <span className="text-[11px] text-muted-foreground block">Esperado: {formatCurrencyVE(saldosEsperados?.saldoActualBs || 0, false)}</span>
                 <span className={`text-xs font-semibold inline-flex items-center gap-1 ${Math.abs(difBs) < 0.01 ? 'text-emerald-500' : difBs > 0 ? 'text-blue-500' : 'text-destructive'}`}>
-                  {Math.abs(difBs) < 0.01 ? 'Cuadrado' : difBs > 0 ? `+${difBs.toFixed(2)}Bs Sobrante` : `${difBs.toFixed(2)}Bs Faltante`}
+                  {Math.abs(difBs) < 0.01 ? 'Cuadrado' : difBs > 0 ? `+${formatCurrencyVE(difBs, false)} Sobrante` : `${formatCurrencyVE(difBs, false)} Faltante`}
                 </span>
               </div>
             )}
@@ -247,7 +248,7 @@ export function ArqueoCajaModal({
                   💵 Billetes & Monedas USD
                 </span>
                 <span className="text-xs font-bold text-emerald-600 font-mono">
-                  ${totalUsd.toFixed(2)}
+                  {formatCurrencyVE(totalUsd, true)}
                 </span>
               </div>
               <div className="divide-y divide-border overflow-y-auto">
@@ -259,7 +260,7 @@ export function ArqueoCajaModal({
                       <div className="w-24">
                         <span className="font-semibold text-sm">{d.label}</span>
                         <span className="block text-[11px] text-muted-foreground font-mono">
-                          = ${subtotal.toFixed(2)}
+                          = {formatCurrencyVE(subtotal, true)}
                         </span>
                       </div>
 
@@ -320,7 +321,7 @@ export function ArqueoCajaModal({
                   🇻🇪 Billetes Bolívares (VES)
                 </span>
                 <span className="text-xs font-bold text-primary font-mono">
-                  Bs. {totalBs.toFixed(2)}
+                  {formatCurrencyVE(totalBs, false)}
                 </span>
               </div>
               <div className="divide-y divide-border overflow-y-auto">
@@ -332,7 +333,7 @@ export function ArqueoCajaModal({
                       <div className="w-24">
                         <span className="font-semibold text-sm">{d.label}</span>
                         <span className="block text-[11px] text-muted-foreground font-mono">
-                          = Bs. {subtotal.toFixed(2)}
+                          = {formatCurrencyVE(subtotal, false)}
                         </span>
                       </div>
 
@@ -389,7 +390,7 @@ export function ArqueoCajaModal({
         {/* Footer Actions */}
         <div className="pt-4 border-t border-border flex items-center justify-between">
           <span className="text-xs text-muted-foreground">
-            Total Arqueado: <strong className="text-foreground">${totalUsd.toFixed(2)}</strong> | <strong className="text-foreground">Bs. {totalBs.toFixed(2)}</strong>
+            Total Arqueado: <strong className="text-foreground">{formatCurrencyVE(totalUsd, true)}</strong> | <strong className="text-foreground">{formatCurrencyVE(totalBs, false)}</strong>
           </span>
           <div className="flex gap-2">
             <button
