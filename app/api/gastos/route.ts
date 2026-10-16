@@ -46,6 +46,7 @@ export async function GET(req: Request) {
       metodoPago: gasto.metodoPago?.nombre || "N/A",
       status: gasto.estadoPago,
       proveedor: gasto.proveedor?.nombre || "N/A",
+      rif: gasto.proveedor?.rif || "",
       origen: "Local"
     }));
 
@@ -68,6 +69,19 @@ export async function GET(req: Request) {
       ['name', 'invoice_date', 'partner_id', 'amount_untaxed', 'amount_tax', 'amount_total', 'payment_state', 'move_type', 'amount_residual', 'invoice_line_ids', 'currency_id', 'journal_id'],
       0, 200
     );
+
+    const partnerIds = Array.from(new Set(moves.map((m: any) => Array.isArray(m.partner_id) ? m.partner_id[0] : null).filter(Boolean)));
+    let partnerVatMap: Record<number, string> = {};
+    if (partnerIds.length > 0) {
+      try {
+        const partners = await odoo.searchRead('res.partner', [['id', 'in', partnerIds]], ['id', 'vat']);
+        partners.forEach((p: any) => {
+          if (p.id) partnerVatMap[p.id] = p.vat || '';
+        });
+      } catch (e) {
+        console.error("Error fetching partner VAT:", e);
+      }
+    }
 
     const allLineIds = moves.flatMap((m: any) => m.invoice_line_ids || []);
     let linesMap: any = {};
@@ -117,14 +131,13 @@ export async function GET(req: Request) {
         retencion25 = (compra.amount_tax || 0) * 0.25;
       }
 
-      // Filtrar: Solo nos interesan las facturas que tengan gastos y que NO sean una compra de mercancía pura.
-      // (Si tiene mercancía, ya se mostró en compras. Si queremos mostrar la parte de gasto aquí, lo hacemos).
       if (!isGasto) {
         continue;
       }
 
       const cxc = compra.amount_residual || 0;
       const pagadoTotal = compra.amount_total - cxc;
+      const partnerId = Array.isArray(compra.partner_id) ? compra.partner_id[0] : null;
 
       odooGastos.push({
         id: "odoo_" + compra.id.toString(),
@@ -144,6 +157,7 @@ export async function GET(req: Request) {
         metodoPago: "N/A",
         status: compra.payment_state === "paid" ? "PAGADO" : "POR PAGAR",
         proveedor: Array.isArray(compra.partner_id) ? compra.partner_id[1] : "Desconocido",
+        rif: partnerId ? (partnerVatMap[partnerId] || '') : '',
         origen: "Odoo"
       });
     }

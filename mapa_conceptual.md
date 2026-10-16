@@ -87,17 +87,22 @@ Es el centro de mando. Recolecta indicadores de salud de la empresa con los sigu
 * **Lógica:** Se auditan las ventas de Odoo para identificar operaciones donde el cliente adeuda una porción (Cashea, créditos corporativos). Estos montos entran a un seguimiento de "Cuentas por Cobrar" directo del módulo de Ingresos/Dashboard.
 
 ### 5. Caja & Bancos
-* **Origen:** Híbrido (Odoo / PostgreSQL Local).
-* **Lógica Local:** Arranca con saldos iniciales (separados en **Bs y Dólares**) tanto para cajas físicas (Bóveda, Caja Chica) como para cuentas bancarias. Se alimenta de las operaciones diarias (ingresos/egresos) generando un saldo final de flujo de caja.
-* **Bancos como Cajas:** Para permitir a tesorería realizar "ajustes pertinentes", los bancos receptores de ingresos (Zelle, Binance, Banesco Panamá, Bancos Nacionales) se tratan lógicamente como Cajas Locales dentro de la base de datos, habilitando registro de nuevos movimientos (entradas y salidas) para cuadrar su saldo con la realidad.
-* **Integración Odoo POS (Tiempo Real):** Extrae directamente desde Odoo (`pos.config`, `pos.session` y `pos.payment`) todas las sesiones activas y pasadas de Punto de Venta, permitiendo ver el cuadre y saldo actual al vuelo. Para proteger la integridad, los movimientos en cajas POS solo pueden hacerse en Odoo, la app solo lee los datos.
-* **Vista Global (Dashboard Consolidado):** Unifica las tres aristas: (1) Cajas Locales, (2) Bancos, y (3) Cajas Odoo POS, sumando todos sus valores y presentando un patrimonio o flujo total universal de la empresa segmentado entre USD y Bs.
+* **Origen:** Híbrido (Odoo / PostgreSQL Local con Prisma).
+* **Correlativo de Movimientos:** Todos los movimientos de caja cuentan con un correlativo secuencial normalizado que inicia a partir de `00-0121` (formato `00-XXXX`), asignado automáticamente a nuevos registros y presentado con tipografía monospace destacada en la tabla.
+* **Arqueo de Caja & Contador de Denominaciones:** Herramienta interactiva de auditoría física que permite a cajeros y administradores contar denominaciones de billetes en tiempo real tanto en **Dólares ($100, $50, $20, $10, $5, $2, $1, monedas)** como en **Bolívares (Bs. 500, 200, 100, 50, 20, 10, 5)**. Calcula el total físico vs. saldo esperado en sistema, mostrando de inmediato si la caja está cuadrada o presenta sobrante/faltante. Permite exportar/copiar el desglose e integrarse directamente en los procesos de Apertura y Cierre de caja.
+* **Separación de Cajas POS y Bancos:** Se auditan y agrupan por separado las **Cajas de los POS (Odoo)** y las **Cuentas Bancarias / Diarios de Banco (Banesco, Venezuela, Zelle, Binance, etc.)**. Se excluyen categóricamente métodos no bancarios ni de efectivo como "Ventas a crédito", "Delivery", "Saldo a favor", "Diferencias" y "Retenciones de impuestos", garantizando que los saldos y movimientos solo reflejen dinero real.
+* **Filtro de Fechas Permanente:** El selector de rango de fechas (Desde - Hasta) permanece activo y visible en todas las vistas del módulo (`Resumen`, `Movimientos`, `Cuadres` y vista `Global`), permitiendo auditar flujos de efectivo en cualquier período seleccionado.
+* **Monto de Apertura del Día Prominente:** La vista de resumen destaca como primer KPI el Monto de Apertura de Caja del Día en USD ($) y Bolívares (Bs), junto con la hora de apertura y el estado operativo en vivo.
+* **Vista Global:** Totaliza saldos disponibles, aperturas del día y desglose categorizado entre Cajas Locales, POS y Bancos en una cuadrícula horizontal de alto impacto visual.
 
 ### 6. Gastos CXP
 * **Origen:** Híbrido (Odoo / Local).
+* **Buscador Inteligente por Nombre y RIF:** La barra de búsqueda opera con coincidencia difusa y normalizada tanto por **Nombre del Proveedor** como por **RIF / Documento Fiscal** (extrayendo el RIF desde Odoo `res.partner.vat` y de la base de datos local), además de concepto y número de documento.
+* **Visualización del RIF:** Cada registro en la tabla de Gastos CXP exhibe de forma prominente el RIF del proveedor en una insignia estilizada debajo de la razón social.
 * **Lógica de Clasificación:** Toda compra o factura de proveedor proveniente de Odoo que afecte una cuenta contable de **categoría 6 o 7** (ej. 6xxxxx o 7xxxxx) se excluye automáticamente del módulo de Compras y aterriza en esta sección como un Gasto.
 * **Retención de Impuestos (25%):** Al igual que en Compras, si el documento clasifica como Factura Fiscal, se extrae el 25% del total de IVA del documento para mostrar la retención aplicada al gasto.
 * **Creación Hacia Odoo:** El sistema incluye la funcionalidad de crear nuevos gastos desde la app de TecnoGestión y enviarlos directamente a Odoo (`account.move`) impactando la contabilidad en tiempo real sin distorsionar inventarios.
+
 
 
 ### 7. Tesorería

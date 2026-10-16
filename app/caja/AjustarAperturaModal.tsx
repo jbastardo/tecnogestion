@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { X } from "lucide-react";
+import { X, Calculator } from "lucide-react";
+import { ArqueoCajaModal } from "./ArqueoCajaModal";
 
 export function AjustarAperturaModal({ isOpen, onClose, onSave, cajaActiva }: any) {
   const [saldoUsd, setSaldoUsd] = useState("");
   const [saldoBs, setSaldoBs] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isArqueoOpen, setIsArqueoOpen] = useState(false);
 
   if (!isOpen) return null;
 
@@ -48,6 +50,17 @@ export function AjustarAperturaModal({ isOpen, onClose, onSave, cajaActiva }: an
           </button>
         </div>
         
+        <div className="mb-4">
+          <button
+            type="button"
+            onClick={() => setIsArqueoOpen(true)}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
+          >
+            <Calculator size={15} />
+            Contador de Billetes / Arqueo Inicial
+          </button>
+        </div>
+        
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium mb-1">Monto de Apertura (Dólares $)</label>
@@ -80,6 +93,17 @@ export function AjustarAperturaModal({ isOpen, onClose, onSave, cajaActiva }: an
             </button>
           </div>
         </form>
+
+        <ArqueoCajaModal
+          isOpen={isArqueoOpen}
+          onClose={() => setIsArqueoOpen(false)}
+          cajaNombre={cajaActiva === "boveda" ? "Bóveda Principal" : "Caja Chica"}
+          applyLabel="Usar montos de arqueo"
+          onApply={({ totalUsd, totalBs }) => {
+            setSaldoUsd(totalUsd.toString());
+            setSaldoBs(totalBs.toString());
+          }}
+        />
       </div>
     </div>
   );

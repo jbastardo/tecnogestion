@@ -214,6 +214,7 @@ model OrdenPago {
 
 model MovimientoCaja {
   id          String   @id @default(cuid())
+  correlativo String?  // Correlativo secuencial ej. "00-0121"
   cajaId      String   // "boveda" o "caja_chica"
   tipo        String   // "INGRESO" o "EGRESO"
   concepto    String

@@ -85,10 +85,21 @@ export default function GastosPage() {
   };
 
   let filteredGastos = gastos.filter(gasto => {
-    const matchSearch = 
-      (gasto.proveedor?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-      (gasto.concepto?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-      (gasto.tipoGasto?.toLowerCase() || "").includes(searchTerm.toLowerCase());
+    const term = searchTerm.trim().toLowerCase();
+    const cleanTerm = term.replace(/[^a-z0-9]/gi, '');
+
+    const provName = (gasto.proveedor || "").toLowerCase();
+    const provRif = (gasto.rif || "").toLowerCase();
+    const provRifClean = provRif.replace(/[^a-z0-9]/gi, '');
+    const concepto = (gasto.concepto || "").toLowerCase();
+    const tipoGasto = (gasto.tipoGasto || "").toLowerCase();
+
+    const matchSearch = !term || 
+      provName.includes(term) ||
+      provRif.includes(term) ||
+      (cleanTerm.length >= 2 && provRifClean.includes(cleanTerm)) ||
+      concepto.includes(term) ||
+      tipoGasto.includes(term);
       
     const matchOperacion = filtroOperacion === "Todas" || gasto.tipoOperacion === filtroOperacion;
     const matchMoneda = filtroMoneda === "Todas" || gasto.moneda === filtroMoneda;
@@ -155,11 +166,11 @@ export default function GastosPage() {
 
       <div className="rounded-xl border border-border bg-card shadow-sm">
         <div className="p-4 border-b border-border flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="relative w-full md:w-72">
+          <div className="relative w-full md:w-96">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input 
               type="text" 
-              placeholder="Buscar por proveedor o concepto..." 
+              placeholder="Buscar por proveedor, RIF (ej. J-12345678) o concepto..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-background border border-border rounded-lg pl-9 pr-4 py-2 text-sm focus:outline-none focus:border-primary"
@@ -283,7 +294,16 @@ export default function GastosPage() {
                 paginatedGastos.map((gasto) => (
                   <tr key={gasto.id} className="hover:bg-muted/50 transition-colors group">
                     <td className="px-4 py-3 font-medium">{gasto.fecha || "S/F"}</td>
-                    <td className="px-4 py-3 max-w-[200px] truncate">{gasto.proveedor}</td>
+                    <td className="px-4 py-3 max-w-[220px]">
+                      <div className="font-medium text-foreground truncate" title={gasto.proveedor}>{gasto.proveedor}</div>
+                      {gasto.rif ? (
+                        <span className="inline-flex items-center text-[10px] font-mono font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded border border-primary/20 mt-0.5">
+                          RIF: {gasto.rif}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground/60 italic">Sin RIF</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-left">
                       <span className="block max-w-[150px] truncate font-medium">{gasto.concepto}</span>
                       <div className="flex items-center gap-1 mt-1">

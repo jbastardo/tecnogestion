@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { X, AlertCircle } from "lucide-react";
+import { X, AlertCircle, Calculator } from "lucide-react";
+import { ArqueoCajaModal } from "./ArqueoCajaModal";
 
 export function CerrarCajaModal({ isOpen, onClose, onSave, cajaActiva, saldosEsperados }: any) {
   const [saldoUsd, setSaldoUsd] = useState("");
   const [saldoBs, setSaldoBs] = useState("");
   const [observaciones, setObservaciones] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isArqueoOpen, setIsArqueoOpen] = useState(false);
 
   if (!isOpen) return null;
 
@@ -53,11 +55,22 @@ export function CerrarCajaModal({ isOpen, onClose, onSave, cajaActiva, saldosEsp
           </button>
         </div>
         
-        <div className="bg-blue-500/10 text-blue-600 border border-blue-500/20 p-3 rounded-lg flex gap-3 text-sm mb-6">
+        <div className="bg-blue-500/10 text-blue-600 border border-blue-500/20 p-3 rounded-lg flex gap-3 text-sm mb-4">
           <AlertCircle size={16} className="mt-0.5 shrink-0" />
           <p>
             El sistema espera que tengas <strong>${(saldosEsperados?.saldoActualUsd || 0).toFixed(2)}</strong> y <strong>Bs. {(saldosEsperados?.saldoActualBs || 0).toFixed(2)}</strong>. Por favor, ingresa el dinero que tienes en físico.
           </p>
+        </div>
+
+        <div className="mb-4">
+          <button
+            type="button"
+            onClick={() => setIsArqueoOpen(true)}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
+          >
+            <Calculator size={15} />
+            Hacer Arqueo de Billetes (Contador Físico)
+          </button>
         </div>
         
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -66,7 +79,7 @@ export function CerrarCajaModal({ isOpen, onClose, onSave, cajaActiva, saldosEsp
               <label className="block text-sm font-medium mb-1">Efectivo Físico ($)</label>
               <input 
                 type="number" 
-                step="0.01"
+                step="0.01" 
                 required
                 value={saldoUsd}
                 onChange={(e) => setSaldoUsd(e.target.value)}
@@ -104,6 +117,19 @@ export function CerrarCajaModal({ isOpen, onClose, onSave, cajaActiva, saldosEsp
             </button>
           </div>
         </form>
+
+        <ArqueoCajaModal
+          isOpen={isArqueoOpen}
+          onClose={() => setIsArqueoOpen(false)}
+          cajaNombre={cajaActiva === "boveda" ? "Bóveda Principal" : "Caja Chica"}
+          saldosEsperados={saldosEsperados}
+          applyLabel="Aplicar al Cierre de Caja"
+          onApply={({ totalUsd, totalBs, desgloseTexto }) => {
+            setSaldoUsd(totalUsd.toString());
+            setSaldoBs(totalBs.toString());
+            setObservaciones(prev => prev ? `${prev}\n\n${desgloseTexto}` : desgloseTexto);
+          }}
+        />
       </div>
     </div>
   );

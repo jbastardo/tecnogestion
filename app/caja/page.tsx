@@ -1,16 +1,26 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, Plus, ArrowUpRight, ArrowDownRight, Wallet, History, FileText, AlertTriangle } from "lucide-react";
+import { 
+  Search, Plus, ArrowUpRight, ArrowDownRight, Wallet, History, 
+  FileText, AlertTriangle, Calculator, Calendar, Landmark, 
+  Store, CheckCircle2, XCircle, Clock
+} from "lucide-react";
 import { AjustarAperturaModal } from "./AjustarAperturaModal";
 import { NuevoMovimientoModal } from "./NuevoMovimientoModal";
 import { CerrarCajaModal } from "./CerrarCajaModal";
+import { ArqueoCajaModal } from "./ArqueoCajaModal";
 
 export default function CajaPage() {
   const [activeTab, setActiveTab] = useState<"resumen" | "movimientos" | "cuadres">("resumen");
-  const [cajaActiva, setCajaActiva] = useState<any>("global");
+  const [cajaActiva, setCajaActiva] = useState<string>("global");
+  const [categoriaFiltro, setCategoriaFiltro] = useState<"todas" | "locales" | "pos" | "bancos">("todas");
   
-  const [fechaInicio, setFechaInicio] = useState<string>(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]);
+  // Filtros de fecha permanentes en toda la sección
+  const [fechaInicio, setFechaInicio] = useState<string>(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0];
+  });
   const [fechaFin, setFechaFin] = useState<string>(new Date().toISOString().split('T')[0]);
   
   const [data, setData] = useState<any>(null);
@@ -19,16 +29,17 @@ export default function CajaPage() {
   const [odooCajas, setOdooCajas] = useState<any[]>([]);
   const [odooBancos, setOdooBancos] = useState<any[]>([]);
   
-  // Modal states
+  // Modales
   const [isAperturaOpen, setIsAperturaOpen] = useState(false);
   const [isMovimientoOpen, setIsMovimientoOpen] = useState(false);
   const [isCerrarOpen, setIsCerrarOpen] = useState(false);
+  const [isArqueoOpen, setIsArqueoOpen] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
     try {
       if (cajaActiva === 'global') {
-        const res = await fetch(`/api/caja/global`);
+        const res = await fetch(`/api/caja/global?inicio=${fechaInicio}&fin=${fechaFin}`);
         const json = await res.json();
         setData({ ...json, isGlobal: true });
       } else {
@@ -57,67 +68,126 @@ export default function CajaPage() {
       .catch(console.error);
   }, []);
 
+  // Obtener nombre amigable de la caja activa
+  const getNombreCajaActiva = () => {
+    if (cajaActiva === 'global') return "Resumen Global (Todas)";
+    if (cajaActiva === 'boveda') return "Bóveda Principal";
+    if (cajaActiva === 'caja_chica') return "Caja Chica";
+    if (cajaActiva.startsWith('odoo_')) {
+      const id = parseInt(cajaActiva.split('_')[1]);
+      const found = odooCajas.find(c => c.id === id);
+      return found ? `POS: ${found.name}` : "Caja POS";
+    }
+    if (cajaActiva.startsWith('journal_')) {
+      const id = parseInt(cajaActiva.split('_')[1]);
+      const found = odooBancos.find(b => b.id === id);
+      return found ? `Banco: ${found.name}` : "Banco";
+    }
+    return "Caja";
+  };
+
+  // Filtrado de cajas en vista global
+  const cajasFiltradas = (data?.cajas || []).filter((c: any) => {
+    if (categoriaFiltro === "todas") return true;
+    if (categoriaFiltro === "locales") return c.category === 'LOCAL' || c.type === 'LOCAL';
+    if (categoriaFiltro === "pos") return c.category === 'POS' || c.type === 'POS_ODOO';
+    if (categoriaFiltro === "bancos") return c.category === 'BANCO' || c.type === 'BANCO_ODOO';
+    return true;
+  });
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {/* Encabezado Superior */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Caja & Bancos</h2>
-          <p className="text-muted-foreground">Control de bóveda, efectivo y cuadres de caja diarios</p>
+          <div className="flex items-center gap-2">
+            <h2 className="text-2xl font-bold tracking-tight text-foreground">Caja & Bancos</h2>
+            <span className="text-xs px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-semibold">
+              {getNombreCajaActiva()}
+            </span>
+          </div>
+          <p className="text-muted-foreground text-sm">
+            Control de bóveda, cajas POS, bancos autorizados y arqueo de denominaciones
+          </p>
         </div>
-        <div className="flex gap-2">
+
+        {/* Toolbar de Acciones y Filtros */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Selector de Cajas y Bancos agrupados */}
           <select 
             value={cajaActiva}
-            onChange={(e) => setCajaActiva(e.target.value as any)}
-            className="bg-card border border-border text-sm rounded-lg px-3 py-2 outline-none focus:border-primary font-medium text-foreground"
+            onChange={(e) => setCajaActiva(e.target.value)}
+            className="bg-card border border-border text-sm rounded-lg px-3 py-2 outline-none focus:border-primary font-medium text-foreground shadow-sm"
           >
-            <option value="global">Resumen Global (Todas)</option>
-            <optgroup label="Cajas Locales">
+            <option value="global">🌐 Resumen Global (Todas)</option>
+            
+            <optgroup label="🏦 Cajas Locales">
               <option value="boveda">Bóveda Principal (Local)</option>
               <option value="caja_chica">Caja Chica (Admin)</option>
             </optgroup>
-            {odooBancos.length > 0 && (
-              <optgroup label="Bancos / Diarios (Odoo)">
-                {odooBancos.map((b) => (
-                  <option key={b.id} value={`journal_${b.id}`}>{b.name}</option>
+
+            {odooCajas.length > 0 && (
+              <optgroup label="🖥️ Cajas POS (Puntos de Venta)">
+                {odooCajas.map((c) => (
+                  <option key={c.id} value={`odoo_${c.id}`}>POS: {c.name}</option>
                 ))}
               </optgroup>
             )}
-            {odooCajas.length > 0 && (
-              <optgroup label="Cajas POS (Odoo)">
-                {odooCajas.map((c) => (
-                  <option key={c.id} value={`odoo_${c.id}`}>{c.name}</option>
+
+            {odooBancos.length > 0 && (
+              <optgroup label="💳 Bancos & Cuentas">
+                {odooBancos.map((b) => (
+                  <option key={b.id} value={`journal_${b.id}`}>Banco: {b.name}</option>
                 ))}
               </optgroup>
             )}
           </select>
-          {(activeTab === 'movimientos' || activeTab === 'cuadres') && cajaActiva !== 'global' && (
-            <div className="flex gap-2">
-              <input 
-                type="date"
-                value={fechaInicio}
-                onChange={e => setFechaInicio(e.target.value)}
-                className="bg-card border border-border text-sm rounded-lg px-3 py-2 outline-none focus:border-primary font-medium text-foreground"
-              />
-              <input 
-                type="date"
-                value={fechaFin}
-                onChange={e => setFechaFin(e.target.value)}
-                className="bg-card border border-border text-sm rounded-lg px-3 py-2 outline-none focus:border-primary font-medium text-foreground"
-              />
-            </div>
-          )}
+
+          {/* FILTRO DE FECHAS: Permanentemente visible en todas las ventanas */}
+          <div className="flex items-center gap-1.5 bg-card border border-border px-2.5 py-1.5 rounded-lg shadow-sm">
+            <Calendar size={14} className="text-muted-foreground shrink-0" />
+            <input 
+              type="date"
+              title="Fecha Inicio"
+              value={fechaInicio}
+              onChange={e => setFechaInicio(e.target.value)}
+              className="bg-transparent border-none text-xs outline-none text-foreground font-medium"
+            />
+            <span className="text-muted-foreground text-xs font-semibold">-</span>
+            <input 
+              type="date"
+              title="Fecha Fin"
+              value={fechaFin}
+              onChange={e => setFechaFin(e.target.value)}
+              className="bg-transparent border-none text-xs outline-none text-foreground font-medium"
+            />
+          </div>
+
+          {/* Botón Arqueo de Caja / Denominaciones */}
+          <button 
+            onClick={() => setIsArqueoOpen(true)}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1.5 shadow-sm"
+            title="Contador de Billetes y Monedas"
+          >
+            <Calculator size={16} />
+            Arqueo de Caja
+          </button>
+
+          {/* Botón Nuevo Movimiento */}
           <button 
             onClick={() => setIsMovimientoOpen(true)}
             disabled={cajaActiva === 'global' || data?.estado === 'CERRADA' || cajaActiva.startsWith('odoo_') || cajaActiva.startsWith('journal_')}
-            className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-2 disabled:opacity-50"
+            className="bg-primary text-primary-foreground px-3.5 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-1.5 disabled:opacity-40 shadow-sm"
           >
             <Plus size={16} />
-            Nuevo Movimiento
+            Movimiento
           </button>
+
+          {/* Botón Cerrar Caja */}
           <button 
             onClick={() => setIsCerrarOpen(true)}
             disabled={cajaActiva === 'global' || data?.estado === 'CERRADA' || cajaActiva.startsWith('odoo_') || cajaActiva.startsWith('journal_')}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+            className="bg-blue-600 text-white px-3.5 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-1.5 disabled:opacity-40 shadow-sm"
           >
             <FileText size={16} />
             Cerrar Caja
@@ -125,67 +195,198 @@ export default function CajaPage() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex border-b border-border">
+      {/* Tabs Principales */}
+      <div className="flex border-b border-border gap-4">
         <button 
           onClick={() => setActiveTab("resumen")}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "resumen" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+          className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${
+            activeTab === "resumen" 
+              ? "border-primary text-primary" 
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
         >
           Resumen
         </button>
         <button 
           onClick={() => setActiveTab("movimientos")}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "movimientos" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+          className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${
+            activeTab === "movimientos" 
+              ? "border-primary text-primary" 
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
         >
-          Movimientos
+          Movimientos (Correlativos)
         </button>
         <button 
           onClick={() => setActiveTab("cuadres")}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "cuadres" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+          className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${
+            activeTab === "cuadres" 
+              ? "border-primary text-primary" 
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
         >
           Historial de Cuadres
         </button>
       </div>
 
+      {/* CONTENIDO PRINCIPAL */}
       {loading ? (
-        <div className="text-center text-muted-foreground p-8">Cargando...</div>
+        <div className="rounded-xl border border-border bg-card p-12 text-center text-muted-foreground">
+          <div className="animate-pulse space-y-2">
+            <p className="font-medium text-foreground">Sincronizando información de caja y bancos...</p>
+            <p className="text-xs">Consultando Odoo y registros locales</p>
+          </div>
+        </div>
       ) : activeTab === "resumen" && data?.isGlobal ? (
+        /* VISTA RESUMEN GLOBAL (Widescreen Horizontal Layout) */
         <div className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-               <h3 className="text-sm font-medium text-muted-foreground">Total Global USD</h3>
-               <div className="text-3xl font-bold text-emerald-500 mt-2">${(data.totalUsd || 0).toFixed(2)}</div>
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+            {/* KPI 1: Total Global USD */}
+            <div className="rounded-xl border border-border bg-card p-5 shadow-sm flex flex-col justify-between">
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Saldo Global Total (USD)</span>
+              <div className="text-3xl font-bold text-emerald-500 mt-2">${(data.totalUsd || 0).toFixed(2)}</div>
+              <span className="text-xs text-muted-foreground mt-1">Cajas locales + POS + Bancos</span>
             </div>
-            <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-               <h3 className="text-sm font-medium text-muted-foreground">Total Global Bs</h3>
-               <div className="text-3xl font-bold mt-2">Bs. {(data.totalBs || 0).toFixed(2)}</div>
+
+            {/* KPI 2: Total Global Bs */}
+            <div className="rounded-xl border border-border bg-card p-5 shadow-sm flex flex-col justify-between">
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Saldo Global Total (Bs)</span>
+              <div className="text-3xl font-bold text-primary mt-2">Bs. {(data.totalBs || 0).toFixed(2)}</div>
+              <span className="text-xs text-muted-foreground mt-1">Bolívares en efectivo y cuentas</span>
+            </div>
+
+            {/* KPI 3: Monto de Apertura Global del Día */}
+            <div className="rounded-xl border border-border bg-card p-5 shadow-sm flex flex-col justify-between bg-primary/5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Aperturas del Día</span>
+                <Clock className="h-4 w-4 text-primary" />
+              </div>
+              <div className="mt-2">
+                <div className="text-2xl font-bold text-foreground">
+                  ${(data.totalAperturaUsd || 0).toFixed(2)}
+                </div>
+                <div className="text-sm font-semibold text-muted-foreground">
+                  Bs. {(data.totalAperturaBs || 0).toFixed(2)}
+                </div>
+              </div>
+              <span className="text-[11px] text-muted-foreground mt-1">Base de apertura inicial</span>
+            </div>
+
+            {/* KPI 4: Cajas y Bancos Activos */}
+            <div className="rounded-xl border border-border bg-card p-5 shadow-sm flex flex-col justify-between">
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Entidades Registradas</span>
+              <div className="text-3xl font-bold text-foreground mt-2">{data.cajas?.length || 0}</div>
+              <div className="text-xs text-muted-foreground flex gap-2 mt-1">
+                <span>Locales: {data.cajas?.filter((c: any) => c.type === 'LOCAL').length || 0}</span> | 
+                <span>POS: {data.cajas?.filter((c: any) => c.type === 'POS_ODOO').length || 0}</span> | 
+                <span>Bancos: {data.cajas?.filter((c: any) => c.type === 'BANCO_ODOO').length || 0}</span>
+              </div>
             </div>
           </div>
-          <h3 className="text-lg font-bold">Desglose por Caja / Banco</h3>
+
+          {/* Filtro por Categorías de Cajas / Bancos */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+            <h3 className="text-lg font-bold text-foreground">Desglose por Caja & Banco</h3>
+            <div className="flex items-center gap-1.5 bg-muted/50 p-1 rounded-lg border border-border text-xs">
+              <button
+                onClick={() => setCategoriaFiltro("todas")}
+                className={`px-3 py-1.5 rounded-md font-medium transition-colors ${categoriaFiltro === "todas" ? "bg-card text-foreground shadow-sm font-semibold" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                Todas ({data.cajas?.length || 0})
+              </button>
+              <button
+                onClick={() => setCategoriaFiltro("locales")}
+                className={`px-3 py-1.5 rounded-md font-medium transition-colors ${categoriaFiltro === "locales" ? "bg-card text-foreground shadow-sm font-semibold" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                Cajas Locales ({data.cajas?.filter((c: any) => c.type === 'LOCAL').length || 0})
+              </button>
+              <button
+                onClick={() => setCategoriaFiltro("pos")}
+                className={`px-3 py-1.5 rounded-md font-medium transition-colors ${categoriaFiltro === "pos" ? "bg-card text-foreground shadow-sm font-semibold" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                Cajas POS ({data.cajas?.filter((c: any) => c.type === 'POS_ODOO').length || 0})
+              </button>
+              <button
+                onClick={() => setCategoriaFiltro("bancos")}
+                className={`px-3 py-1.5 rounded-md font-medium transition-colors ${categoriaFiltro === "bancos" ? "bg-card text-foreground shadow-sm font-semibold" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                Bancos ({data.cajas?.filter((c: any) => c.type === 'BANCO_ODOO').length || 0})
+              </button>
+            </div>
+          </div>
+
+          {/* Tabla de cajas filtradas */}
           <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
              <table className="w-full text-sm text-left">
                <thead className="text-xs text-muted-foreground bg-muted/50 uppercase border-b border-border">
                  <tr>
-                   <th className="px-4 py-3 font-medium">Nombre</th>
-                   <th className="px-4 py-3 font-medium text-right">Saldo USD</th>
-                   <th className="px-4 py-3 font-medium text-right">Saldo Bs</th>
+                   <th className="px-4 py-3 font-semibold">Tipo / Categoría</th>
+                   <th className="px-4 py-3 font-semibold">Nombre de la Entidad</th>
+                   <th className="px-4 py-3 font-semibold text-right">Apertura ($ / Bs)</th>
+                   <th className="px-4 py-3 font-semibold text-right">Saldo Actual (USD $)</th>
+                   <th className="px-4 py-3 font-semibold text-right">Saldo Actual (Bs)</th>
+                   <th className="px-4 py-3 text-center">Acción</th>
                  </tr>
                </thead>
                <tbody className="divide-y divide-border">
-                 {data.cajas?.map((c: any) => (
-                   <tr key={c.id} className="hover:bg-muted/30 transition-colors">
-                     <td className="px-4 py-3 font-medium flex items-center gap-2">
-                        {c.name}
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted border border-border">{c.type}</span>
-                     </td>
-                     <td className="px-4 py-3 text-right font-bold text-emerald-500">${c.saldoActualUsd.toFixed(2)}</td>
-                     <td className="px-4 py-3 text-right font-medium">Bs. {c.saldoActualBs.toFixed(2)}</td>
-                   </tr>
-                 ))}
-                 {(!data.cajas || data.cajas.length === 0) && (
+                 {cajasFiltradas.map((c: any) => {
+                   const isLocal = c.type === 'LOCAL';
+                   const isPos = c.type === 'POS_ODOO';
+                   const isBanco = c.type === 'BANCO_ODOO';
+
+                   return (
+                     <tr key={c.id} className="hover:bg-muted/30 transition-colors">
+                       <td className="px-4 py-3 font-medium">
+                         {isLocal && (
+                           <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/20">
+                             🏦 Caja Local
+                           </span>
+                         )}
+                         {isPos && (
+                           <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                             🖥️ POS Odoo
+                           </span>
+                         )}
+                         {isBanco && (
+                           <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-500 border border-purple-500/20">
+                             💳 Banco Odoo
+                           </span>
+                         )}
+                       </td>
+                       <td className="px-4 py-3 font-semibold text-foreground">
+                         {c.name}
+                       </td>
+                       <td className="px-4 py-3 text-right text-xs text-muted-foreground">
+                         {c.saldoAperturaUsd > 0 || c.saldoAperturaBs > 0 ? (
+                           <>
+                             ${(c.saldoAperturaUsd || 0).toFixed(2)}<br/>
+                             <span>Bs. {(c.saldoAperturaBs || 0).toFixed(2)}</span>
+                           </>
+                         ) : (
+                           <span className="text-muted-foreground/60">-</span>
+                         )}
+                       </td>
+                       <td className="px-4 py-3 text-right font-bold text-emerald-500 text-base">
+                         ${(c.saldoActualUsd || 0).toFixed(2)}
+                       </td>
+                       <td className="px-4 py-3 text-right font-semibold text-foreground text-sm">
+                         Bs. {(c.saldoActualBs || 0).toFixed(2)}
+                       </td>
+                       <td className="px-4 py-3 text-center">
+                         <button
+                           onClick={() => setCajaActiva(c.id)}
+                           className="text-xs font-semibold px-3 py-1 rounded-lg bg-secondary hover:bg-secondary/80 text-secondary-foreground transition-colors"
+                         >
+                           Ver Detalle
+                         </button>
+                       </td>
+                     </tr>
+                   );
+                 })}
+                 {cajasFiltradas.length === 0 && (
                     <tr>
-                      <td colSpan={3} className="px-4 py-4 text-center text-muted-foreground">
-                        No hay cajas ni bancos abiertos.
+                      <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                        No hay cajas ni bancos para la categoría seleccionada.
                       </td>
                     </tr>
                  )}
@@ -194,111 +395,191 @@ export default function CajaPage() {
           </div>
         </div>
       ) : activeTab === "resumen" && (
+        /* VISTA RESUMEN INDIVIDUAL CON MONTO DE APERTURA PROMINENTE */
         <div className="space-y-6">
-          
-          <div className="flex items-center gap-4 bg-muted/30 border border-border p-4 rounded-xl">
-             <div className="flex-1">
-                <p className="text-sm text-muted-foreground font-medium">Estado de la Caja</p>
-                <div className="flex items-center gap-2 mt-1">
+          {/* Banner de Estado y Monto de Apertura del Día */}
+          <div className="rounded-2xl border border-border bg-gradient-to-r from-card via-card to-primary/5 p-6 shadow-sm">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Estado de {getNombreCajaActiva()}
+                  </span>
                   {data?.estado === 'ABIERTA' ? (
-                    <>
-                      <span className="text-xl font-bold text-emerald-500">ABIERTA</span>
-                      <span className="text-sm ml-4">
-                        Apertura ($): <strong>${data?.cajaAbierta?.saldoAperturaUsd?.toFixed(2)}</strong> | (Bs): <strong>Bs. {data?.cajaAbierta?.saldoAperturaBs?.toFixed(2)}</strong>
-                      </span>
-                    </>
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/30">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                      ABIERTA
+                    </span>
                   ) : (
-                    <span className="text-xl font-bold text-destructive">CERRADA</span>
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-destructive/10 text-destructive border border-destructive/30">
+                      <XCircle size={14} />
+                      CERRADA
+                    </span>
                   )}
                 </div>
-             </div>
-             
-             {data?.estado === 'CERRADA' && !cajaActiva.startsWith('odoo_') && !cajaActiva.startsWith('journal_') && (
-               <button 
-                 onClick={() => setIsAperturaOpen(true)}
-                 className="text-sm border border-border bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 px-4 py-2 rounded-lg transition-colors font-semibold"
-               >
-                 Abrir Caja
-               </button>
-             )}
-             {(cajaActiva.startsWith('odoo_') || cajaActiva.startsWith('journal_')) && (
-               <div className="text-sm text-muted-foreground flex flex-col items-end">
-                 <span>Las cajas y bancos de Odoo se administran en Odoo.</span>
-               </div>
-             )}
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-xl border border-border bg-card p-6 shadow-sm flex flex-col justify-between">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-muted-foreground">Efectivo Total</span>
-                <Wallet className="h-4 w-4 text-emerald-500" />
+                <h3 className="text-xl font-extrabold text-foreground tracking-tight">
+                  {getNombreCajaActiva()}
+                </h3>
               </div>
-              <div className="mt-4">
-                <div className="text-3xl font-bold">${(data?.resumen?.saldoActualUsd || 0).toFixed(2)}</div>
-                <div className="text-xl font-medium text-muted-foreground">Bs. {(data?.resumen?.saldoActualBs || 0).toFixed(2)}</div>
-                <p className="text-xs text-muted-foreground mt-1">Saldo + Ingresos - Egresos</p>
+
+              {/* Acciones de Apertura / Cierre */}
+              <div className="flex items-center gap-2">
+                {data?.estado === 'CERRADA' && !cajaActiva.startsWith('odoo_') && !cajaActiva.startsWith('journal_') && (
+                  <button 
+                    onClick={() => setIsAperturaOpen(true)}
+                    className="text-sm bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl transition-colors font-semibold shadow-sm flex items-center gap-2"
+                  >
+                    <Plus size={16} />
+                    Abrir Caja del Día
+                  </button>
+                )}
+                {data?.estado === 'ABIERTA' && !cajaActiva.startsWith('odoo_') && !cajaActiva.startsWith('journal_') && (
+                  <button 
+                    onClick={() => setIsCerrarOpen(true)}
+                    className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl transition-colors font-semibold shadow-sm flex items-center gap-2"
+                  >
+                    <FileText size={16} />
+                    Cerrar y Cuadrar Caja
+                  </button>
+                )}
               </div>
             </div>
-            
+          </div>
+
+          {/* Panel de KPIs (4 Cards con Monto de Apertura del Día) */}
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+            {/* Card 1: MONTO DE APERTURA DE CAJA DEL DÍA */}
+            <div className="rounded-xl border border-primary/20 bg-card p-6 shadow-sm flex flex-col justify-between relative overflow-hidden">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Apertura del Día
+                </span>
+                <Clock className="h-4 w-4 text-primary" />
+              </div>
+              <div className="mt-4">
+                <div className="text-3xl font-extrabold text-foreground">
+                  ${(data?.cajaAbierta?.saldoAperturaUsd || 0).toFixed(2)}
+                </div>
+                <div className="text-lg font-semibold text-muted-foreground mt-0.5">
+                  Bs. {(data?.cajaAbierta?.saldoAperturaBs || 0).toFixed(2)}
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {data?.cajaAbierta?.fechaApertura && data.cajaAbierta.fechaApertura !== 'Siempre Activa'
+                    ? `Aperturada: ${new Date(data.cajaAbierta.fechaApertura).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                    : "Base inicial registrada"}
+                </p>
+              </div>
+            </div>
+
+            {/* Card 2: Ingresos del Período / Día */}
             <div className="rounded-xl border border-border bg-card p-6 shadow-sm flex flex-col justify-between">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-muted-foreground">Ingresos del Día</span>
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Ingresos del Período
+                </span>
                 <ArrowUpRight className="h-4 w-4 text-emerald-500" />
               </div>
               <div className="mt-4">
-                <div className="text-2xl font-bold text-emerald-500">+${(data?.resumen?.ingresosUsd || 0).toFixed(2)}</div>
-                <div className="text-lg font-medium text-emerald-500/70">+Bs. {(data?.resumen?.ingresosBs || 0).toFixed(2)}</div>
+                <div className="text-2xl font-bold text-emerald-500">
+                  +${(data?.resumen?.ingresosUsd || 0).toFixed(2)}
+                </div>
+                <div className="text-base font-semibold text-emerald-500/80 mt-0.5">
+                  +Bs. {(data?.resumen?.ingresosBs || 0).toFixed(2)}
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">Cobros y entradas efectivas</p>
               </div>
             </div>
-            
+
+            {/* Card 3: Egresos del Período / Día */}
             <div className="rounded-xl border border-border bg-card p-6 shadow-sm flex flex-col justify-between">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-muted-foreground">Egresos del Día</span>
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Egresos del Período
+                </span>
                 <ArrowDownRight className="h-4 w-4 text-destructive" />
               </div>
               <div className="mt-4">
-                <div className="text-2xl font-bold text-destructive">-${(data?.resumen?.egresosUsd || 0).toFixed(2)}</div>
-                <div className="text-lg font-medium text-destructive/70">-Bs. {(data?.resumen?.egresosBs || 0).toFixed(2)}</div>
+                <div className="text-2xl font-bold text-destructive">
+                  -${(data?.resumen?.egresosUsd || 0).toFixed(2)}
+                </div>
+                <div className="text-base font-semibold text-destructive/80 mt-0.5">
+                  -Bs. {(data?.resumen?.egresosBs || 0).toFixed(2)}
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">Gastos, compras y retiros</p>
+              </div>
+            </div>
+
+            {/* Card 4: Saldo Actual Disponible */}
+            <div className="rounded-xl border border-border bg-card p-6 shadow-sm flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Saldo Actual Disponible
+                </span>
+                <Wallet className="h-4 w-4 text-primary" />
+              </div>
+              <div className="mt-4">
+                <div className="text-3xl font-extrabold text-foreground">
+                  ${(data?.resumen?.saldoActualUsd || 0).toFixed(2)}
+                </div>
+                <div className="text-lg font-semibold text-muted-foreground mt-0.5">
+                  Bs. {(data?.resumen?.saldoActualBs || 0).toFixed(2)}
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">Apertura + Ingresos - Egresos</p>
               </div>
             </div>
           </div>
         </div>
       )}
 
+      {/* TAB MOVIMIENTOS CON CORRELATIVO */}
       {!loading && activeTab === "movimientos" && (
         <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
           {cajaActiva === 'global' ? (
              <div className="p-8 text-center text-muted-foreground">
-               Por favor selecciona una caja específica para ver sus movimientos.
+               Por favor selecciona una caja o banco específico para examinar sus movimientos con correlativo.
              </div>
           ) : data?.movimientos?.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">
-              Aún no hay movimientos registrados para esta caja.
+              Aún no hay movimientos registrados para el rango de fechas seleccionado.
             </div>
           ) : (
             <table className="w-full text-sm text-left">
               <thead className="text-xs text-muted-foreground bg-muted/50 uppercase border-b border-border">
                 <tr>
-                  <th className="px-4 py-3 font-medium">Fecha</th>
-                  <th className="px-4 py-3 font-medium">Concepto</th>
-                  <th className="px-4 py-3 font-medium text-right">Monto ($)</th>
-                  <th className="px-4 py-3 font-medium text-right">Monto (Bs)</th>
-                  <th className="px-4 py-3 font-medium">Tipo</th>
+                  <th className="px-4 py-3 font-semibold">Correlativo</th>
+                  <th className="px-4 py-3 font-semibold">Fecha / Hora</th>
+                  <th className="px-4 py-3 font-semibold">Concepto / Referencia</th>
+                  <th className="px-4 py-3 font-semibold text-right">Monto ($)</th>
+                  <th className="px-4 py-3 font-semibold text-right">Monto (Bs)</th>
+                  <th className="px-4 py-3 font-semibold text-center">Tipo</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {data?.movimientos?.map((mov: any) => (
                   <tr key={mov.id} className="hover:bg-muted/30 transition-colors">
-                    <td className="px-4 py-3 text-muted-foreground">
+                    {/* Correlativo secuencial comenzando en 00-0121 */}
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-md bg-secondary text-secondary-foreground border border-border">
+                        {mov.correlativo || "00-0121"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
                       {new Date(mov.fecha).toLocaleString()}
                     </td>
-                    <td className="px-4 py-3 font-medium">{mov.concepto}</td>
-                    <td className="px-4 py-3 text-right">${mov.montoUsd.toFixed(2)}</td>
-                    <td className="px-4 py-3 text-right">Bs. {mov.montoBs.toFixed(2)}</td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        mov.tipo === 'INGRESO' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-destructive/10 text-destructive'
+                    <td className="px-4 py-3 font-medium text-foreground">
+                      {mov.concepto}
+                    </td>
+                    <td className="px-4 py-3 text-right font-bold text-foreground">
+                      ${mov.montoUsd.toFixed(2)}
+                    </td>
+                    <td className="px-4 py-3 text-right font-medium text-muted-foreground">
+                      Bs. {mov.montoBs.toFixed(2)}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                        mov.tipo === 'INGRESO' 
+                          ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' 
+                          : 'bg-destructive/10 text-destructive border border-destructive/20'
                       }`}>
                         {mov.tipo}
                       </span>
@@ -311,6 +592,7 @@ export default function CajaPage() {
         </div>
       )}
 
+      {/* TAB HISTORIAL DE CUADRES */}
       {!loading && activeTab === "cuadres" && (
         <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
           {cajaActiva === 'global' ? (
@@ -319,24 +601,24 @@ export default function CajaPage() {
              </div>
           ) : data?.cuadres?.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">
-              Aún no hay cuadres registrados.
+              Aún no hay cuadres registrados para este período.
             </div>
           ) : (
             <table className="w-full text-sm text-left">
               <thead className="text-xs text-muted-foreground bg-muted/50 uppercase border-b border-border">
                 <tr>
-                  <th className="px-4 py-3 font-medium">Apertura</th>
-                  <th className="px-4 py-3 font-medium">Cierre</th>
-                  <th className="px-4 py-3 font-medium text-right">Físico</th>
-                  <th className="px-4 py-3 font-medium text-right">Diferencia</th>
-                  <th className="px-4 py-3 font-medium">Observaciones</th>
+                  <th className="px-4 py-3 font-semibold">Apertura</th>
+                  <th className="px-4 py-3 font-semibold">Cierre</th>
+                  <th className="px-4 py-3 font-semibold text-right">Físico Contado</th>
+                  <th className="px-4 py-3 font-semibold text-right">Diferencia</th>
+                  <th className="px-4 py-3 font-semibold">Observaciones / Arqueo</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {data?.cuadres?.map((cuadre: any) => {
                   const difUsd = (cuadre.saldoFisicoUsd || 0) - (cuadre.saldoSistemaUsd || 0);
                   const difBs = (cuadre.saldoFisicoBs || 0) - (cuadre.saldoSistemaBs || 0);
-                  const hasDif = difUsd !== 0 || difBs !== 0;
+                  const hasDif = Math.abs(difUsd) > 0.01 || Math.abs(difBs) > 0.01;
 
                   return (
                     <tr key={cuadre.id} className="hover:bg-muted/30 transition-colors">
@@ -346,25 +628,29 @@ export default function CajaPage() {
                       <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
                         {cuadre.fechaCierre ? new Date(cuadre.fechaCierre).toLocaleString() : 'N/A'}
                       </td>
-                      <td className="px-4 py-3 text-right font-medium">
+                      <td className="px-4 py-3 text-right font-bold text-foreground">
                         ${(cuadre.saldoFisicoUsd || 0).toFixed(2)}<br/>
-                        <span className="text-xs text-muted-foreground">Bs. {(cuadre.saldoFisicoBs || 0).toFixed(2)}</span>
+                        <span className="text-xs text-muted-foreground font-medium">Bs. {(cuadre.saldoFisicoBs || 0).toFixed(2)}</span>
                       </td>
                       <td className="px-4 py-3 text-right">
                         {hasDif ? (
-                          <div className="flex flex-col items-end text-destructive font-medium">
-                            <span className="flex items-center gap-1"><AlertTriangle size={12}/> {difUsd.toFixed(2)}$</span>
-                            <span className="text-xs">Bs. {difBs.toFixed(2)}</span>
+                          <div className="flex flex-col items-end text-destructive font-bold text-xs">
+                            <span className="flex items-center gap-1">
+                              <AlertTriangle size={12}/> {difUsd > 0 ? `+${difUsd.toFixed(2)}$` : `${difUsd.toFixed(2)}$`}
+                            </span>
+                            <span className="text-[11px] font-medium">{difBs > 0 ? `+${difBs.toFixed(2)}Bs` : `${difBs.toFixed(2)}Bs`}</span>
                           </div>
                         ) : (
-                          <span className="text-emerald-500 font-medium">OK</span>
+                          <span className="text-emerald-500 font-bold inline-flex items-center gap-1">
+                            <CheckCircle2 size={14} /> Cuadrada
+                          </span>
                         )}
                       </td>
-                      <td className="px-4 py-3 max-w-xs truncate text-muted-foreground">
+                      <td className="px-4 py-3 text-xs text-muted-foreground max-w-sm whitespace-pre-line">
                         {cuadre.observaciones || '-'}
                       </td>
                     </tr>
-                  )
+                  );
                 })}
               </tbody>
             </table>
@@ -372,6 +658,7 @@ export default function CajaPage() {
         </div>
       )}
 
+      {/* Modales */}
       <AjustarAperturaModal 
         isOpen={isAperturaOpen} 
         onClose={() => setIsAperturaOpen(false)}
@@ -390,6 +677,12 @@ export default function CajaPage() {
         cajaActiva={cajaActiva}
         saldosEsperados={data?.resumen}
         onSave={fetchData}
+      />
+      <ArqueoCajaModal
+        isOpen={isArqueoOpen}
+        onClose={() => setIsArqueoOpen(false)}
+        cajaNombre={getNombreCajaActiva()}
+        saldosEsperados={data?.resumen}
       />
     </div>
   );

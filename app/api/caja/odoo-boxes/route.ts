@@ -16,11 +16,19 @@ export async function GET(req: Request) {
       ['name', 'active']
     );
     
-    const banks = await odoo.searchRead(
+    const rawBanks = await odoo.searchRead(
       'account.journal',
       [['type', 'in', ['bank', 'cash']]],
       ['name', 'code', 'type']
     );
+
+    const isExcluido = (name: string) => {
+      const lower = (name || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      const keywords = ['retencion', 'islr', 'imp. municipal', 'impuesto', 'credito', 'por cobrar', 'cxc', 'delivery', 'saldo a favor', 'diferencia'];
+      return keywords.some(k => lower.includes(k));
+    };
+
+    const banks = rawBanks.filter((b: any) => !isExcluido(b.name));
     
     return NextResponse.json({ configs, banks });
   } catch (error: any) {

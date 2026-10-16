@@ -11,6 +11,12 @@ const odoo = new OdooService({
   password: process.env.ODOO_PASSWORD || '47028d0d8c58c126b1e9276bec43158fc0c7ee41',
 });
 
+const isMetodoExcluido = (name: string) => {
+  const lower = (name || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const keywords = ['retencion', 'islr', 'imp. municipal', 'impuesto', 'credito', 'por cobrar', 'cxc', 'delivery', 'saldo a favor', 'diferencia'];
+  return keywords.some(k => lower.includes(k));
+};
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -24,9 +30,15 @@ export async function GET(req: Request) {
       const config_id = parseInt(cajaId.split('_')[1]);
       
       if (action === 'resumen') {
+        const domainSession: any[] = [['config_id', '=', config_id]];
+        if (fechaInicio && fechaFin) {
+          domainSession.push(['start_at', '>=', fechaInicio + ' 00:00:00']);
+          domainSession.push(['start_at', '<=', fechaFin + ' 23:59:59']);
+        }
+
         const sessions = await odoo.searchRead(
           'pos.session',
-          [['config_id', '=', config_id]],
+          domainSession,
           ['name', 'state', 'start_at', 'stop_at', 'cash_register_balance_start', 'cash_register_balance_end_real', 'cash_register_difference'],
           0, 1,
           'id desc'
@@ -46,7 +58,11 @@ export async function GET(req: Request) {
         let egresosBs = 0;
         
         payments.forEach((p: any) => {
-           const method = p.payment_method_id && p.payment_method_id[1] ? p.payment_method_id[1].toLowerCase() : '';
+           const methodName = p.payment_method_id && p.payment_method_id[1] ? p.payment_method_id[1] : '';
+           if (isMetodoExcluido(methodName)) {
+             return; // Excluir crédito, delivery, saldo a favor, retenciones
+           }
+           const method = methodName.toLowerCase();
            const isUsd = method.includes('dolar') || method.includes('usd') || method.includes('divisa') || method.includes('zelle') || method.includes('binance') || method.includes('usdt');
            if (isUsd) {
               if (p.amount > 0) ingresosUsd += p.amount;
@@ -81,13 +97,21 @@ export async function GET(req: Request) {
         const sessions = await odoo.searchRead('pos.session', domain, ['id'], 0, 50, 'id desc');
         if (!sessions.length) return NextResponse.json({ movimientos: [] });
         const sessionIds = sessions.map((s: any) => s.id);
-        const payments = await odoo.searchRead('pos.payment', [['session_id', 'in', sessionIds]], ['amount', 'payment_method_id', 'payment_date', 'pos_order_id']);
+        const rawPayments = await odoo.searchRead('pos.payment', [['session_id', 'in', sessionIds]], ['amount', 'payment_method_id', 'payment_date', 'pos_order_id']);
         
-        const movimientos = payments.map((p: any) => {
+        // Excluir metodos no deseados
+        const filteredPayments = rawPayments.filter((p: any) => {
+          const methodName = p.payment_method_id && p.payment_method_id[1] ? p.payment_method_id[1] : '';
+          return !isMetodoExcluido(methodName);
+        });
+
+        const movimientos = filteredPayments.map((p: any, idx: number) => {
            const method = p.payment_method_id && p.payment_method_id[1] ? p.payment_method_id[1].toLowerCase() : '';
            const isUsd = method.includes('dolar') || method.includes('usd') || method.includes('divisa') || method.includes('zelle') || method.includes('binance') || method.includes('usdt');
+           const seq = 121 + idx;
            return {
               id: p.id,
+              correlativo: `00-${String(seq).padStart(4, '0')}`,
               fecha: p.payment_date,
               concepto: `Orden ${p.pos_order_id ? p.pos_order_id[1] : ''} - ${p.payment_method_id ? p.payment_method_id[1] : ''}`,
               montoUsd: isUsd ? Math.abs(p.amount) : 0,
@@ -185,12 +209,14 @@ export async function GET(req: Request) {
          
          const lines = await odoo.searchRead('account.move.line', domain, ['date', 'name', 'ref', 'debit', 'credit'], 0, 100, 'date desc, id desc');
          
-         const movimientos = lines.map((l: any) => {
+         const movimientos = lines.map((l: any, idx: number) => {
             const monto = (l.debit || 0) - (l.credit || 0);
+            const seq = 121 + idx;
             return {
                id: l.id,
+               correlativo: `00-${String(seq).padStart(4, '0')}`,
                fecha: l.date,
-               concepto: `${l.ref || ''} ${l.name || ''}`.trim(),
+               concepto: `${l.ref || ''} ${l.name || ''}`.trim() || 'Movimiento Bancario',
                montoUsd: isUsd ? Math.abs(monto) : 0,
                montoBs: !isUsd ? Math.abs(monto) : 0,
                tipo: monto >= 0 ? 'INGRESO' : 'EGRESO'
@@ -221,12 +247,19 @@ export async function GET(req: Request) {
         });
       }
 
-      // Sumar ingresos y egresos de la caja abierta
+      // Sumar ingresos y egresos de la caja abierta respetando filtro de fechas si existe
+      const whereMov: any = { cajaId };
+      if (fechaInicio && fechaFin) {
+        whereMov.fecha = {
+          gte: new Date(fechaInicio + 'T00:00:00.000Z'),
+          lte: new Date(fechaFin + 'T23:59:59.999Z')
+        };
+      } else {
+        whereMov.fecha = { gte: cajaAbierta.fechaApertura };
+      }
+
       const movimientos = await prisma.movimientoCaja.findMany({
-        where: {
-          cajaId,
-          fecha: { gte: cajaAbierta.fechaApertura }
-        }
+        where: whereMov
       });
 
       const ingresosUsd = movimientos.filter(m => m.tipo === 'INGRESO').reduce((acc, m) => acc + m.montoUsd, 0);
@@ -260,11 +293,26 @@ export async function GET(req: Request) {
             lte: new Date(fechaFin + 'T23:59:59.999Z')
          };
       }
-      const movimientos = await prisma.movimientoCaja.findMany({
+      const rawMovimientos = await prisma.movimientoCaja.findMany({
         where: whereClause,
         orderBy: { fecha: 'desc' },
         take: 100
       });
+
+      // Asegurar correlativo secuencial comenzando en 00-0121 para cualquier registro
+      const totalMovs = await prisma.movimientoCaja.count();
+      const movimientos = rawMovimientos.map((mov, idx) => {
+        let corr = mov.correlativo;
+        if (!corr) {
+          const calcNum = Math.max(121, 121 + (rawMovimientos.length - 1 - idx));
+          corr = `00-${String(calcNum).padStart(4, '0')}`;
+        }
+        return {
+          ...mov,
+          correlativo: corr
+        };
+      });
+
       return NextResponse.json({ movimientos });
     }
 
@@ -322,8 +370,31 @@ export async function POST(req: Request) {
     }
 
     if (action === 'movimiento') {
+      // Encontrar el último número de correlativo registrado comenzando en 00-0121
+      const lastMov = await prisma.movimientoCaja.findFirst({
+        where: { correlativo: { not: null } },
+        orderBy: { createdAt: 'desc' }
+      });
+
+      let nextNum = 121;
+      if (lastMov && lastMov.correlativo) {
+        const match = lastMov.correlativo.match(/\d+$/);
+        if (match) {
+          const parsed = parseInt(match[0], 10);
+          if (!isNaN(parsed) && parsed >= 121) {
+            nextNum = parsed + 1;
+          }
+        }
+      } else {
+        const count = await prisma.movimientoCaja.count();
+        nextNum = 121 + count;
+      }
+
+      const correlativo = `00-${String(nextNum).padStart(4, '0')}`;
+
       const nuevoMovimiento = await prisma.movimientoCaja.create({
         data: {
+          correlativo,
           cajaId,
           tipo: body.tipo, // INGRESO o EGRESO
           concepto: body.concepto,
